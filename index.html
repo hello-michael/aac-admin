@@ -6,20 +6,22 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
 <title>AAC Admin</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M100 30v70h70l-70 70H30v-70z' fill='%23E77829'/%3E%3Cpath d='M100 30h70v70h-70z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M100 30v70h70l-70 70H30v-70z' fill='%234C6FC8'/%3E%3Cpath d='M100 30h70v70h-70z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- admin.archival.art v2 (2026-10-16). Source of truth: scripts/bridge_cloud/dashboard/index.html in archival-art-co.
      Brand: docs/archival-art-co-brand-bible.md + docs/design-system/tokens.json. Black bar, gallery white ground, Mixta Sharp
      for the one headline per view, Geist Mono wall labels, Helvetica for reading. The square is never colored; the bridge's
-     health lives in the mark's shadow, borrowed from three paintings (Cyclamen, Thayer, The Red Chair).
+     health lives in the mark's shadow, in the email pigments: ultramarine working, Tyrian purple needs you, vermilion stopped, Prussian blue not live.
      Data: Supabase Auth + rpc admin_dashboard() / admin_hold() / admin_release(), all gated by admin_emails. -->
 <style>
 @font-face{font-family:"Mixta Sharp";src:url("https://cdn.shopify.com/s/files/1/0655/8236/6797/files/MixtaSharp-Heavy.woff2") format("woff2");font-weight:800;font-display:swap}
 :root{
   --ink:#000;--paper:#FCFBF8;--linen:#F4F1EB;--graphite:#4D4D4D;--pencil:#737373;--hairline:#E5E5E5;--on-ink-muted:#B8B5AF;--error:#B3261E;
-  --ok:#67C1B3;--warn:#E77829;--bad:#D64C29;--rest:#4A4540;--sh:var(--rest);
+  /* historic pigments (docs/design-system/tokens.json pigments), the brand default where no painting is beside the mark (Mike 2026-10-16) */
+  --ultramarine:#4C6FC8;--prussian:#3E7FB0;--verdigris:#3FA191;--indian-yellow:#E2A33B;--tyrian:#A0508C;--vermilion:#D8492D;
+  --ok:var(--ultramarine);--warn:var(--tyrian);--bad:var(--vermilion);--rest:var(--prussian);--sh:var(--rest);
   --display:"Mixta Sharp",Georgia,"Times New Roman",serif;--mono:"Geist Mono",Menlo,Consolas,monospace;--body:"Helvetica Neue",Helvetica,Arial,sans-serif;
   --w:1240px;--pad:28px;
 }
@@ -40,7 +42,7 @@ button{font:inherit;color:inherit}
 .tabs{display:flex;gap:2px;margin-left:18px;height:100%}
 .tabs a{display:flex;align-items:center;height:100%;padding:0 14px;font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-ink-muted);text-decoration:none;border-bottom:2px solid transparent}
 .tabs a:hover{color:#fff}.tabs a[aria-current=page]{color:#fff;border-bottom-color:#fff}
-.tabs a .n{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:7px;padding:0 4px;background:var(--warn);color:#000;font-size:10px;letter-spacing:0}
+.tabs a .n{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:7px;padding:0 4px;background:var(--warn);color:#fff;font-size:10px;letter-spacing:0}
 .bar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
 .searchbtn{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px 0 12px;background:#141414;border:1px solid #2a2a2a;color:var(--on-ink-muted);font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;min-width:200px}
 .searchbtn:hover{border-color:#444;color:#fff}.searchbtn kbd{margin-left:auto;font:inherit;border:1px solid #333;padding:2px 6px}
@@ -98,8 +100,8 @@ h2{font:800 30px/1.1 var(--display);letter-spacing:-.01em;margin:0}
 
 .chip{display:inline-flex;align-items:center;gap:8px;font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .chip i{width:8px;height:8px;background:var(--pencil);flex:none}
-.chip.needs i{background:var(--warn)}.chip.artelo i{background:var(--ok)}.chip.shipped i{background:var(--ink)}
-.chip.delivered i{background:var(--ink);border-radius:50%}.chip.waiting i{background:none;border:1.5px solid currentColor}.chip.closed{color:var(--pencil)}
+.chip.needs i{background:var(--tyrian)}.chip.artelo i{background:var(--ultramarine)}.chip.shipped i{background:var(--verdigris)}
+.chip.delivered i{background:var(--indian-yellow);border-radius:50%}.chip.clean i{background:var(--ultramarine)}.chip.waiting i{background:none;border:1.5px solid currentColor}.chip.closed{color:var(--pencil)}
 
 .toolbar{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin:26px 0 8px}
 .search{flex:1 1 320px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--ink);padding:6px 0}
@@ -481,7 +483,7 @@ function render() {
   const macOld = D.mac_backup_at && Date.now() - new Date(D.mac_backup_at) > 3 * 3600e3;
   $("b-mac-s").textContent = !D.mac_backup_at ? "The hourly copy of every order on your Mac." : macOld ? "Your Mac is off or asleep. Orders are not affected." : "Hourly copy of every order on your Mac.";
   $("runs").innerHTML = runs.slice(0, 24).map(r => { const p = r.phases || {}, f = p.fetch || {}, q = p.queue || {}, t = p.tracking || {}, dl = p.delivery || {};
-    return `<tr><td class="mono">${esc(when(r.started_at))}</td><td>${r.ok === false ? '<span class="chip needs"><i></i>' + r.errors + ' error(s)</span>' : '<span class="chip shipped"><i></i>Clean</span>'}</td>
+    return `<tr><td class="mono">${esc(when(r.started_at))}</td><td>${r.ok === false ? '<span class="chip needs"><i></i>' + r.errors + ' error(s)</span>' : '<span class="chip clean"><i></i>Clean</span>'}</td>
       <td class="mono">${(f.processed || 0) + (f.awaiting_payment || 0)}</td><td class="mono">${q.submitted || 0}</td><td class="mono">${t.tracked || 0}</td><td class="mono">${dl.delivered || 0}</td><td class="mono">${esc(r.host || "")}</td></tr>`; }).join("")
     || '<tr><td colspan="7" class="empty">No runs yet.</td></tr>';
 
