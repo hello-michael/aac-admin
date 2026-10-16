@@ -585,6 +585,7 @@ function closeOrder() {
 }
 
 async function act(fn, args, confirmText) {
+  if (document.body.classList.contains("offline")) return toast("Offline: refresh once the database is back, then review again.");  // Codex B2-11
   if (confirmText && !confirm(confirmText)) return;
   const {data, error} = await sb.rpc(fn, args);
   toast(error ? error.message : data);
@@ -596,7 +597,12 @@ document.addEventListener("click", e => {
   const t = e.target.closest("[data-open],[data-release],[data-hold],[data-copy],[data-filter],[data-f]");
   if (!t) return;
   if (t.dataset.open) location.hash = "#/orders/" + t.dataset.open;
-  else if (t.dataset.release) act("admin_release", {p_order_id: t.dataset.release}, "Release this order? The next bridge run re-checks payment and sends it to Artelo.");
+  else if (t.dataset.release) {
+    // send the exact hold reason on screen: the server refuses if it changed since (Codex B2-11)
+    const o = (D.orders || []).find(x => x.order_id === t.dataset.release);
+    act("admin_release", {p_order_id: t.dataset.release, p_reason: o ? (o.error_message || "") : ""},
+        "Release order #" + (o ? o.number : "") + "?\n\nHeld because: " + (o ? o.error_message : "") + "\n\nThe next bridge run re-checks payment and sends it to Artelo.");
+  }
   else if (t.dataset.hold) { const note = prompt("Hold this order? It will not go to Artelo until you release it.\n\nOptional note for yourself:", ""); if (note !== null) act("admin_hold", {p_order_id: t.dataset.hold, p_note: note}); }
   else if (t.dataset.copy) navigator.clipboard.writeText(t.dataset.copy).then(() => toast("Address copied."));
   else if (t.dataset.filter) location.hash = "#/orders?f=" + t.dataset.filter;
@@ -610,7 +616,7 @@ document.addEventListener("keydown", e => {
     else if (f.length && !e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
   }
   if (e.key === "/" && !openNo && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); goSearch(); }
-  if (e.key === "Enter" && e.target.classList && e.target.classList.contains("row")) e.target.click();
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("row")) { e.preventDefault(); e.target.click(); }
 });
 function goSearch() { if (!location.hash.startsWith("#/orders")) location.hash = "#/orders"; setTimeout(() => $("q").focus(), 40); }
 $("searchbtn").addEventListener("click", goSearch);
