@@ -6,103 +6,176 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
 <title>AAC Admin</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M100 30v70h70l-70 70H30v-70z' fill='%234A4540'/%3E%3Cpath d='M100 30h70v70h-70z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M100 30v70h70l-70 70H30v-70z' fill='%23E77829'/%3E%3Cpath d='M100 30h70v70h-70z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- admin.archival.art (2026-10-16). Source of truth: scripts/bridge_cloud/dashboard/index.html in archival-art-co.
-     Brand: docs/archival-art-co-brand-bible.md + docs/design-system/tokens.json. Black header, gallery white ground,
-     Mixta Sharp for the one headline, Geist Mono wall labels, Helvetica for reading. The square is never colored;
-     the bridge's health lives in the mark's shadow, borrowed from three paintings (Cyclamen, Thayer, The Red Chair).
-     Signs in with Supabase Auth; the only data call is rpc admin_dashboard(), which answers only for admin_emails. -->
+<!-- admin.archival.art v2 (2026-10-16). Source of truth: scripts/bridge_cloud/dashboard/index.html in archival-art-co.
+     Brand: docs/archival-art-co-brand-bible.md + docs/design-system/tokens.json. Black bar, gallery white ground, Mixta Sharp
+     for the one headline per view, Geist Mono wall labels, Helvetica for reading. The square is never colored; the bridge's
+     health lives in the mark's shadow, borrowed from three paintings (Cyclamen, Thayer, The Red Chair).
+     Data: Supabase Auth + rpc admin_dashboard() / admin_hold() / admin_release(), all gated by admin_emails. -->
 <style>
 @font-face{font-family:"Mixta Sharp";src:url("https://cdn.shopify.com/s/files/1/0655/8236/6797/files/MixtaSharp-Heavy.woff2") format("woff2");font-weight:800;font-display:swap}
 :root{
   --ink:#000;--paper:#FCFBF8;--linen:#F4F1EB;--graphite:#4D4D4D;--pencil:#737373;--hairline:#E5E5E5;--on-ink-muted:#B8B5AF;--error:#B3261E;
-  /* borrowed: Moser's Cyclamen, Thayer's Red Flamingoes, Erichsen's The Red Chair; charcoal at rest */
-  --ok:#67C1B3;--warn:#E77829;--bad:#D64C29;--rest:#4A4540;
-  --sh:var(--rest);
-  --display:"Mixta Sharp",Georgia,"Times New Roman",serif;
-  --mono:"Geist Mono",Menlo,Consolas,monospace;
-  --body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ok:#67C1B3;--warn:#E77829;--bad:#D64C29;--rest:#4A4540;--sh:var(--rest);
+  --display:"Mixta Sharp",Georgia,"Times New Roman",serif;--mono:"Geist Mono",Menlo,Consolas,monospace;--body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --w:1240px;--pad:28px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
 a{color:inherit}
+button{font:inherit;color:inherit}
 .label{font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pencil)}
+.mono{font-family:var(--mono)}
+.mark{display:block;flex:none}.mark .sh{fill:var(--sh);transition:fill 1.6s ease}.mark .sq{fill:#fff}
+.wordmark{height:21px;width:auto;aspect-ratio:800/162;display:block}
 
-/* the black bar */
-.bar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:5}
-.bar-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
-.lockup{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
-.mark{display:block;flex:none}
-.mark .sh{fill:var(--sh);transition:fill 1.6s ease}
-.mark .sq{fill:#fff}
-.bar .mark{width:30px;height:30px}
-.wordmark{height:22px;width:auto;aspect-ratio:800/162;display:block}
-.bar .tag{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-ink-muted);border-left:1px solid #333;padding-left:12px;margin-left:2px}
-.bar nav{margin-left:auto;display:flex;gap:4px}
-.bar nav a,.bar nav button{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:none;border:1px solid transparent;padding:10px 12px;cursor:pointer;text-decoration:none}
-.bar nav a:hover,.bar nav button:hover{border-color:#444}
+.bar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:20}
+.bar-in{max-width:var(--w);margin:0 auto;padding:0 var(--pad);height:60px;display:flex;align-items:center;gap:18px}
+.lockup{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}
+.bar .mark{width:28px;height:28px}
+.tag{font:500 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--on-ink-muted);border-left:1px solid #333;padding-left:12px}
+.tabs{display:flex;gap:2px;margin-left:18px;height:100%}
+.tabs a{display:flex;align-items:center;height:100%;padding:0 14px;font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-ink-muted);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a:hover{color:#fff}.tabs a[aria-current=page]{color:#fff;border-bottom-color:#fff}
+.tabs a .n{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:7px;padding:0 4px;background:var(--warn);color:#000;font-size:10px;letter-spacing:0}
+.bar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+.searchbtn{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px 0 12px;background:#141414;border:1px solid #2a2a2a;color:var(--on-ink-muted);font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;min-width:200px}
+.searchbtn:hover{border-color:#444;color:#fff}.searchbtn kbd{margin-left:auto;font:inherit;border:1px solid #333;padding:2px 6px}
+.ghost{background:none;border:1px solid transparent;color:#fff;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:10px 10px;cursor:pointer;text-decoration:none}
+.ghost:hover{border-color:#444}
+.live{display:flex;align-items:center;gap:7px;color:var(--on-ink-muted);font:500 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:0 6px}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--sh);animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--sh) 70%,transparent)}100%{box-shadow:0 0 0 9px transparent}}
 
-main{max-width:1180px;margin:0 auto;padding:56px 24px 80px}
-
-/* hero: the status, said once in the display face */
-.hero{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center;padding-bottom:48px;border-bottom:1px solid var(--hairline)}
-.hero .mark{width:132px;height:132px}
-.hero .mark .sq{fill:var(--ink)} /* on the white ground the square is ink, as on the store */
-.state{display:inline-flex;align-items:center;gap:8px}
-.state i{width:9px;height:9px;background:var(--sh);transition:background 1.6s ease}
-h1{font:800 clamp(38px,6vw,68px)/1.02 var(--display);letter-spacing:-.01em;margin:14px 0 14px}
+main{max-width:var(--w);margin:0 auto;padding:52px var(--pad) 90px}
+.view{display:none}.view.on{display:block;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font:800 clamp(36px,5.6vw,66px)/1.02 var(--display);letter-spacing:-.01em;margin:12px 0 12px}
+h2{font:800 30px/1.1 var(--display);letter-spacing:-.01em;margin:0}
 .lede{color:var(--graphite);font-size:17px;max-width:62ch;margin:0}
-.problems{margin:22px 0 0;padding:14px 16px;background:var(--linen);border-left:3px solid var(--error);color:var(--ink);font-size:15px}
+.sec{margin-top:56px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px}
+.sec-h a.label{text-decoration:none}.sec-h a.label:hover{color:var(--ink)}
+
+.hero{display:grid;grid-template-columns:auto 1fr;gap:44px;align-items:center}
+.hero .mark{width:140px;height:140px}.hero .mark .sq{fill:var(--ink)}
+.state{display:inline-flex;align-items:center;gap:9px}.state i{width:9px;height:9px;background:var(--sh);transition:background 1.6s}
+.problems{margin-top:20px;padding:14px 18px;background:var(--linen);border-left:3px solid var(--error);font-size:15px}
 .problems:empty{display:none}
 
-/* wall-label figures */
-.figs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--hairline)}
-.fig{padding:28px 20px 30px 0}
-.fig+.fig{padding-left:20px;border-left:1px solid var(--hairline)}
-.fig .v{font:800 34px/1.1 var(--display);letter-spacing:-.01em;margin:10px 0 6px}
+.needs{display:grid;gap:12px}
+.need{display:grid;grid-template-columns:64px 1fr auto;gap:18px;align-items:center;padding:16px;background:#fff;border:1px solid var(--hairline);border-left:3px solid var(--warn)}
+.need img,.need .ph,.thumb{width:64px;height:64px;object-fit:cover;background:var(--linen);display:block}
+.need .why{font-size:14px;color:var(--graphite)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:#222}.btn.line{background:none;color:var(--ink)}.btn.line:hover{background:var(--linen)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+
+.figs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink);border-bottom:1px solid var(--hairline)}
+.fig{padding:24px 20px 26px 0}.fig+.fig{padding-left:20px;border-left:1px solid var(--hairline)}
+.fig .v{font:800 36px/1.05 var(--display);letter-spacing:-.01em;margin:10px 0 6px}
 .fig .s{font-size:13px;color:var(--pencil);line-height:1.45}
-.fig .v.warn{color:var(--warn)}
 
-/* the hanging rail of runs */
-.section{padding:44px 0 0}
-.section-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:18px}
-.rail{display:flex;align-items:flex-end;gap:3px;height:54px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
-.rail span{flex:1;min-width:3px;max-width:16px;background:var(--ink);height:100%;opacity:.88;transition:opacity .2s}
-.rail span:hover{opacity:.5}
-.rail span.bad{background:var(--bad);opacity:1}
-.rail span.gap{background:none;border:1px dashed var(--hairline);height:60%}
-.rail-k{display:flex;justify-content:space-between;margin-top:8px}
+.pipe{display:grid;grid-template-columns:repeat(4,1fr)}
+.stage{position:relative;padding:22px 18px 22px 0;text-align:left;display:flex;flex-direction:column;justify-content:flex-start;background:none;border:0;cursor:pointer;border-top:2px solid var(--ink)}
+.stage::before{content:"";position:absolute;top:-7px;left:0;width:12px;height:12px;background:var(--paper);border:2px solid var(--ink)}
+.stage.has::before{background:var(--ink)}
+.stage .v{font:800 46px/1 var(--display);margin:12px 0 4px}
+.stage .s{font-size:13px;color:var(--pencil)}
+.stage:hover .label{color:var(--ink)}
 
-/* orders as wall labels */
-.orders{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
-.order{display:grid;grid-template-columns:110px 1fr 120px 210px;gap:24px;padding:20px 0;border-bottom:1px solid var(--hairline);align-items:start}
-.order .no{font:500 13px/1.5 var(--mono);letter-spacing:.04em}
-.order .when{font-size:13px;color:var(--pencil);margin-top:2px}
-.order .art{font-size:15px;line-height:1.5}
-.order .art b{font-weight:400}
-.order .art em{font-style:normal;color:var(--pencil);font-size:13px;display:block}
-.order .total{font:500 13px/1.5 var(--mono);text-align:right}
-.chip{display:inline-flex;align-items:center;gap:8px;font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:28px 22px}
+.card{background:none;border:0;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;align-self:start}
+.card .img{aspect-ratio:4/5;background:var(--linen);display:grid;place-items:center;overflow:hidden;padding:14px}
+.card .img img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 1px 2px rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.10);transition:transform .35s}
+.card:hover .img img{transform:translateY(-3px)}
+.card .wl{margin-top:12px}
+.card .t{font-size:15px;line-height:1.35;margin-top:3px}
+.card .m{margin-top:6px}
+
+.chip{display:inline-flex;align-items:center;gap:8px;font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .chip i{width:8px;height:8px;background:var(--pencil);flex:none}
-.chip.ok i{background:var(--ink)}
-.chip.go i{background:var(--ok)}
-.chip.warn i{background:var(--warn)}
-.chip.idle{color:var(--pencil)}
-.order .track{font-size:13px;margin-top:6px}
-.order .err{font-size:13px;color:var(--error);margin-top:6px}
-.empty{color:var(--pencil);padding:24px 0}
-footer{margin-top:40px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.chip.needs i{background:var(--warn)}.chip.artelo i{background:var(--ok)}.chip.shipped i{background:var(--ink)}
+.chip.delivered i{background:var(--ink);border-radius:50%}.chip.waiting i{background:none;border:1.5px solid currentColor}.chip.closed{color:var(--pencil)}
 
-/* sign in */
+.toolbar{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin:26px 0 8px}
+.search{flex:1 1 320px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--ink);padding:6px 0}
+.search input{flex:1;border:0;background:none;font:18px var(--body);outline:none;padding:4px 0;min-width:0}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 4px}
+.filters button{border:1px solid var(--hairline);background:#fff;padding:8px 12px;font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--graphite)}
+.filters button b{font-weight:500;color:var(--pencil);margin-left:6px}
+.filters button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}.filters button[aria-pressed=true] b{color:var(--on-ink-muted)}
+.tests{display:flex;align-items:center;gap:8px;cursor:pointer}
+.tests input{accent-color:#000}
+.rows{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--ink)}
+.row{display:grid;grid-template-columns:56px 120px 1.3fr 1.5fr 100px 190px;gap:20px;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline);cursor:pointer;transition:background .15s}
+.row:hover{background:#fff}
+.row .thumb{width:56px;height:56px}
+.row .no{font:500 13px/1.4 var(--mono)}.sub{font-size:13px;color:var(--pencil);line-height:1.4}
+.row .who{font-size:15px;line-height:1.35}.row .what{font-size:14px;line-height:1.4}
+.row .amt{font:500 13px/1.4 var(--mono);text-align:right}
+.empty{color:var(--pencil);padding:28px 0}
+
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .25s;z-index:30}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--paper);z-index:31;transform:translateX(100%);transition:transform .32s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.12);visibility:hidden}
+.drawer.on{transform:none;visibility:visible}
+.d-top{display:flex;align-items:center;gap:14px;padding:0 20px 0 24px;height:60px;background:var(--ink);color:#fff;flex:none}
+.d-top .no{font:500 13px/1 var(--mono);letter-spacing:.06em}
+.d-top .chip{color:#fff}
+.d-top .x{margin-left:auto}
+.d-body{overflow:auto;padding:28px 28px 60px}
+.d-art{display:grid;gap:22px}
+.d-piece{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center}
+.d-piece .img{aspect-ratio:4/5;background:var(--linen);display:grid;place-items:center;padding:12px}
+.d-piece img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 1px 2px rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.1)}
+.d-piece .t{font-size:17px;line-height:1.35;margin:4px 0}
+.d-sec{margin-top:34px}
+.d-sec>.label{display:block;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--ink)}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:22px 1fr auto;gap:12px;padding:0 0 18px;position:relative}
+.tl li::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:1px;background:var(--hairline)}
+.tl li:last-child::before{display:none}
+.tl .dot{width:11px;height:11px;margin-top:6px;border:1.5px solid var(--hairline);background:var(--paper);position:relative;z-index:1}
+.tl li.done .dot{background:var(--ink);border-color:var(--ink)}
+.tl li.now .dot{border-color:var(--ink);background:var(--sh)}
+.tl li.final .dot{border-radius:50%}
+.tl .what{font-size:15px}
+.tl .when{font:500 12px/1.9 var(--mono);color:var(--pencil);white-space:nowrap}
+.tl li:not(.done):not(.now) .what{color:var(--pencil)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:8px 16px;font-size:15px;margin:0}
+.kv dt{color:var(--pencil);font-size:13px;padding-top:2px}.kv dd{margin:0}
+.addr{font-size:15px;line-height:1.55}
+.callout{padding:14px 16px;background:var(--linen);border-left:3px solid var(--warn);font-size:14px;margin-bottom:22px}
+.callout.err{border-left-color:var(--error)}
+.d-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.hint{font-size:13px;color:var(--pencil);margin:12px 0 0}
+
+.rail{display:flex;align-items:flex-end;gap:3px;height:64px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.rail span{flex:1;min-width:2px;max-width:14px;background:var(--ink);height:100%;opacity:.88}
+.rail span.bad{background:var(--bad);opacity:1}.rail span.gap{background:none;border:1px dashed var(--hairline);height:55%}
+.rail span:hover{opacity:.45}
+.rail .none{flex:none;max-width:none;background:none;height:auto;opacity:1;color:var(--pencil);font-size:14px}
+.rail-k{display:flex;justify-content:space-between;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pencil);padding:0 12px 10px 0;border-bottom:1px solid var(--ink);white-space:nowrap}
+td{padding:11px 12px 11px 0;border-bottom:1px solid var(--hairline);vertical-align:top}
+td.mono{font-size:13px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:8px}
+.how p{margin:8px 0 0;font-size:14px;color:var(--graphite)}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:13px 18px;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:min(560px,calc(100% - 32px))}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
 #login{min-height:100svh;background:var(--ink);color:#fff;display:grid;place-items:center;padding:24px}
 .login-in{width:100%;max-width:380px}
 #login .mark{width:96px;height:96px;margin-bottom:28px}
 #login .mark .sh{animation:home 50s linear infinite}
 @keyframes home{0%,100%{fill:#7DA1CA}20%{fill:#D78E98}40%{fill:#AE98CD}60%{fill:#85B7A5}80%{fill:#E29983}}
-#login h1{color:#fff;font-size:44px;margin:0 0 6px}
+#login h1{color:#fff;font-size:46px;margin:0 0 6px}
 #login .lede{color:var(--on-ink-muted);font-size:15px}
 #login label{display:block;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--on-ink-muted);margin:26px 0 8px}
 #login input{width:100%;font:16px var(--body);color:#fff;background:transparent;border:0;border-bottom:1px solid #555;padding:10px 0;border-radius:0}
@@ -114,17 +187,30 @@ footer{margin-top:40px;display:flex;justify-content:space-between;gap:16px;flex-
 
 .hide{display:none!important}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-.bar :focus-visible,#login :focus-visible{outline-color:#fff}
+.bar :focus-visible,#login :focus-visible,.d-top :focus-visible{outline-color:#fff}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
-@media (max-width:980px){.figs{grid-template-columns:repeat(2,1fr)}.fig{padding:22px 16px 24px 0}.fig+.fig{padding-left:0;border-left:0}.fig:nth-child(even){padding-left:16px;border-left:1px solid var(--hairline)}.fig{border-bottom:1px solid var(--hairline)}.figs{border-bottom:0}.fig:last-child:nth-child(odd){grid-column:1/-1;padding-left:0;border-left:0}
-  .order{grid-template-columns:90px 1fr;gap:6px 16px}.order .total{text-align:left}.order>div:nth-child(3){grid-column:2}.order>div:nth-child(4){grid-column:2}}
-@media (max-width:640px){main{padding:36px 16px 60px}.bar-in{padding:12px 16px}.bar .tag{display:none}.bar nav a.hide-sm{display:none}
-  .hero{grid-template-columns:1fr;gap:22px;padding-bottom:36px}.hero .mark{width:84px;height:84px}.fig .v{font-size:28px}}
-@media (prefers-reduced-motion:reduce){#login .mark .sh{animation:none;fill:#7DA1CA}.mark .sh,.state i{transition:none}}
+@media (max-width:1060px){.row{grid-template-columns:56px 110px 1fr 100px 170px}.row .what{display:none}.searchbtn{min-width:0}.searchbtn span{display:none}}
+@media (max-width:860px){
+  :root{--pad:18px}
+  .tabs{margin-left:4px}.tabs a{padding:0 9px}.tag,.live{display:none}
+  .figs{grid-template-columns:repeat(2,1fr)}.fig:nth-child(3){padding-left:0;border-left:0}.fig:nth-child(-n+2){border-bottom:1px solid var(--hairline)}
+  .pipe{grid-template-columns:repeat(2,1fr);row-gap:10px}
+  .row{grid-template-columns:52px 1fr auto;gap:4px 14px}.row .thumb{grid-row:span 2;width:52px;height:52px}
+  .row>div:nth-child(2){grid-column:2;grid-row:1}.row .who{grid-column:2;grid-row:2}.row .amt{grid-column:3;grid-row:1}.row>div:last-child{grid-column:3;grid-row:2;justify-self:end}
+  .how{grid-template-columns:1fr}
+  .hero{grid-template-columns:1fr;gap:20px}.hero .mark{width:80px;height:80px}
+}
+@media (max-width:560px){
+  .bar-in{gap:6px}.wordmark{display:none}.searchbtn{height:32px;padding:0 9px}.searchbtn kbd{display:none}#out{display:none}.foot-out{display:inline-flex!important}.tabs a{padding:0 8px;letter-spacing:.08em;font-size:10.5px}.tabs{margin-left:0}
+  .need{grid-template-columns:52px 1fr}.need img,.need .ph{width:52px;height:52px}.need .btns{grid-column:1/-1}
+  .d-piece{grid-template-columns:96px 1fr}.d-body{padding:22px 18px 60px}.kv{grid-template-columns:100px 1fr}
+  .fig .v{font-size:28px}.stage .v{font-size:36px}.row .chip{font-size:10px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#login .mark .sh{fill:#7DA1CA}}
 </style>
 </head>
 <body>
-
 
 <div id="login" class="hide">
   <div class="login-in">
@@ -143,63 +229,128 @@ footer{margin-top:40px;display:flex;justify-content:space-between;gap:16px;flex-
 
 <div id="app" class="hide">
   <div class="bar"><div class="bar-in">
-    <span class="lockup"><svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg><svg class="wordmark" viewBox="0 0 800 162" aria-hidden="true" focusable="false"><path fill="currentColor" d="M33 75c-16 40-29 76-30 78l-2 5 14 0 15 0 7-21 7-21 31 0 31 0 1 3c1 1 5 11 8 21l6 18 15 0 15 0-1-3c-1-2-15-37-31-79l-29-75-14 0-15 0-28 74zM88 61c5 17 10 32 11 33 0 1-5 1-23 1-19 0-24 0-24-1 0-1 6-16 12-34 6-18 12-32 12-31 0 0 6 15 12 32zM358 80l0 78 12 0 13 0 0-38c1-42 1-43 8-51 10-10 27-11 35-2 6 6 6 7 7 51l0 40 13 0 12 0 0-44c-1-49-1-50-7-58-13-19-48-20-63-2l-5 5 0-29 0-29-13 0-12 0 0 79zM485 13l0 12 13 0 12 0 0-12 0-12-12 0-13 0 0 12zM774 80l0 78 12 0 13 0 0-78 0-79-13 0-12 0 0 79zM213 42c-9 2-21 11-25 19l-2 5 0-11 0-11-12 0-12 0 0 57 0 57 12 0 13 0 0-28c0-32 1-39 5-48 6-12 16-18 30-17l7 1 0-12 0-12-3 0c-4-1-8-1-13 0zM276 42c-28 4-45 27-45 60-1 36 21 59 55 59 25 0 43-14 50-37 2-10 3-9-11-9l-12 1-2 6c-8 25-43 26-52 0-7-18-4-42 7-53 14-14 41-9 45 8l1 5 13 0 12 0 0-5c-4-23-31-40-61-35zM688 42c-20 3-33 13-38 28-2 10-3 9 12 9l12 0 1-3c2-10 10-14 25-14 15 0 22 4 22 14 1 10-3 12-28 16-27 3-33 5-40 13-7 6-8 11-8 22 0 18 9 29 29 33 12 2 33-2 42-8 5-4 6-4 8 0 3 7 12 10 24 8 9-1 9-1 9-10l0-9-5 0c-7-1-7 0-7-39 0-39 0-40-8-48-10-10-29-15-50-12zM719 128c-9 18-49 17-49-2 0-12 8-17 33-20 5-1 11-2 13-3l4-2 1 12c0 9 0 12-2 15zM485 101l0 57 13 0 12 0 0-57 0-57-13 0-12 0 0 57zM526 44c0 1 39 107 40 112 1 2 3 2 15 2l14 0 21-56c11-31 20-57 19-57 0-1-6-1-13-1l-12 0-6 19c-3 10-9 30-14 43-4 14-8 25-8 25 0 0-7-20-15-43l-14-44-14 0c-7 0-13 0-13 0z"/></svg></span>
+    <a class="lockup" href="#/" aria-label="Archival Art Co admin, overview"><svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg><svg class="wordmark" viewBox="0 0 800 162" aria-hidden="true" focusable="false"><path fill="currentColor" d="M33 75c-16 40-29 76-30 78l-2 5 14 0 15 0 7-21 7-21 31 0 31 0 1 3c1 1 5 11 8 21l6 18 15 0 15 0-1-3c-1-2-15-37-31-79l-29-75-14 0-15 0-28 74zM88 61c5 17 10 32 11 33 0 1-5 1-23 1-19 0-24 0-24-1 0-1 6-16 12-34 6-18 12-32 12-31 0 0 6 15 12 32zM358 80l0 78 12 0 13 0 0-38c1-42 1-43 8-51 10-10 27-11 35-2 6 6 6 7 7 51l0 40 13 0 12 0 0-44c-1-49-1-50-7-58-13-19-48-20-63-2l-5 5 0-29 0-29-13 0-12 0 0 79zM485 13l0 12 13 0 12 0 0-12 0-12-12 0-13 0 0 12zM774 80l0 78 12 0 13 0 0-78 0-79-13 0-12 0 0 79zM213 42c-9 2-21 11-25 19l-2 5 0-11 0-11-12 0-12 0 0 57 0 57 12 0 13 0 0-28c0-32 1-39 5-48 6-12 16-18 30-17l7 1 0-12 0-12-3 0c-4-1-8-1-13 0zM276 42c-28 4-45 27-45 60-1 36 21 59 55 59 25 0 43-14 50-37 2-10 3-9-11-9l-12 1-2 6c-8 25-43 26-52 0-7-18-4-42 7-53 14-14 41-9 45 8l1 5 13 0 12 0 0-5c-4-23-31-40-61-35zM688 42c-20 3-33 13-38 28-2 10-3 9 12 9l12 0 1-3c2-10 10-14 25-14 15 0 22 4 22 14 1 10-3 12-28 16-27 3-33 5-40 13-7 6-8 11-8 22 0 18 9 29 29 33 12 2 33-2 42-8 5-4 6-4 8 0 3 7 12 10 24 8 9-1 9-1 9-10l0-9-5 0c-7-1-7 0-7-39 0-39 0-40-8-48-10-10-29-15-50-12zM719 128c-9 18-49 17-49-2 0-12 8-17 33-20 5-1 11-2 13-3l4-2 1 12c0 9 0 12-2 15zM485 101l0 57 13 0 12 0 0-57 0-57-13 0-12 0 0 57zM526 44c0 1 39 107 40 112 1 2 3 2 15 2l14 0 21-56c11-31 20-57 19-57 0-1-6-1-13-1l-12 0-6 19c-3 10-9 30-14 43-4 14-8 25-8 25 0 0-7-20-15-43l-14-44-14 0c-7 0-13 0-13 0z"/></svg></a>
     <span class="tag">Admin</span>
-    <nav>
-      <a href="https://admin.shopify.com/store/bzycf5-jj/orders" target="_blank" rel="noopener">Shopify</a>
-      <a class="hide-sm" href="https://github.com/hello-michael/aac-order-bridge/actions" target="_blank" rel="noopener">Run log</a>
-      <a class="hide-sm" href="https://archival.art" target="_blank" rel="noopener">Store</a>
-      <button id="out" type="button">Sign out</button>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#/" data-tab="overview">Overview</a>
+      <a href="#/orders" data-tab="orders">Orders<span class="n hide" id="tab-need"></span></a>
+      <a href="#/bridge" data-tab="bridge">Bridge</a>
     </nav>
+    <div class="bar-r">
+      <span class="live"><i></i><span>Live</span></span>
+      <button class="searchbtn" id="searchbtn" type="button" aria-label="Search orders"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m11 11 4 4" stroke="currentColor" stroke-width="1.6"/></svg><span>Search orders</span><kbd>/</kbd></button>
+      <button class="ghost" id="out" type="button">Sign out</button>
+    </div>
   </div></div>
 
   <main>
-    <section class="hero">
-      <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
-      <div>
-        <span class="state label"><i></i><span id="pill">Checking</span></span>
-        <h1 id="head">Checking the bridge</h1>
-        <p class="lede" id="sub"></p>
-        <div class="problems" id="problems" role="alert"></div>
+    <section class="view" id="v-overview" aria-label="Overview">
+      <div class="hero">
+        <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
+        <div>
+          <span class="state label"><i></i><span id="pill">Checking</span></span>
+          <h1 id="head">Checking the bridge</h1>
+          <p class="lede" id="sub"></p>
+          <div class="problems" id="problems" role="alert"></div>
+        </div>
+      </div>
+
+      <div class="sec hide" id="needs-sec">
+        <div class="sec-h"><span class="label">Needs you</span><a class="label" href="#/orders?f=needs">See all</a></div>
+        <div class="needs" id="needs"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><span class="label" id="month-label">This month</span><span class="label">Test orders excluded</span></div>
+        <div class="figs">
+          <div class="fig"><div class="label">Sales</div><div class="v" id="f-sales">-</div><div class="s" id="f-sales-s"></div></div>
+          <div class="fig"><div class="label">Orders</div><div class="v" id="f-orders">-</div><div class="s" id="f-orders-s"></div></div>
+          <div class="fig"><div class="label">Prints</div><div class="v" id="f-prints">-</div><div class="s" id="f-prints-s"></div></div>
+          <div class="fig"><div class="label">Order to door</div><div class="v" id="f-door">-</div><div class="s" id="f-door-s"></div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><span class="label">Where every order is</span><span class="label">Tap a stage to see its orders</span></div>
+        <div class="pipe" id="pipe"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><span class="label">Latest orders</span><a class="label" href="#/orders">All orders</a></div>
+        <div class="cards" id="recent"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><span class="label">The bridge, last 48 hours</span><a class="label" href="#/bridge">Details</a></div>
+        <div class="rail" id="rail-mini"></div>
+        <div class="rail-k"><span class="label">48 h ago</span><span class="label" id="rail-mini-n">Now</span></div>
       </div>
     </section>
 
-    <section class="figs" aria-label="Bridge figures">
-      <div class="fig"><div class="label">Last run</div><div class="v" id="k-last">-</div><div class="s" id="k-last-s"></div></div>
-      <div class="fig"><div class="label">Next run</div><div class="v" id="k-next">-</div><div class="s">Hourly. Catches up after any gap.</div></div>
-      <div class="fig"><div class="label">Needs you</div><div class="v" id="k-need">-</div><div class="s" id="k-need-s"></div></div>
-      <div class="fig"><div class="label">At Artelo</div><div class="v" id="k-art">-</div><div class="s">Printing, framing or on the way.</div></div>
-      <div class="fig"><div class="label">Shipped</div><div class="v" id="k-ship">-</div><div class="s">All time.</div></div>
+    <section class="view" id="v-orders" aria-label="Orders">
+      <h2>Orders</h2>
+      <div class="toolbar">
+        <label class="search"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 4 4" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="sr">Search orders</span><input id="q" type="search" placeholder="Order, buyer, email, artwork, artist, city or tracking" autocomplete="off"></label>
+        <label class="tests label"><input type="checkbox" id="show-tests"> Show test orders</label>
+      </div>
+      <div class="filters" id="filters" role="group" aria-label="Filter by status"></div>
+      <ul class="rows" id="rows"></ul>
     </section>
 
-    <section class="section" aria-labelledby="rail-h">
-      <div class="section-h"><span class="label" id="rail-h">The last 48 runs</span><span class="label" id="rail-n"></span></div>
-      <div class="rail" id="runs"></div>
-      <div class="rail-k"><span class="label">Older</span><span class="label">Now</span></div>
+    <section class="view" id="v-bridge" aria-label="Bridge">
+      <h2>The bridge</h2>
+      <p class="lede" style="margin-top:10px" id="b-lede"></p>
+      <div class="sec" style="margin-top:34px">
+        <div class="figs">
+          <div class="fig"><div class="label">Last run</div><div class="v" id="b-last">-</div><div class="s" id="b-last-s"></div></div>
+          <div class="fig"><div class="label">Next run</div><div class="v" id="b-next">-</div><div class="s">Hourly on GitHub. Catches up after any gap.</div></div>
+          <div class="fig"><div class="label">Watchdog</div><div class="v" id="b-dog">-</div><div class="s" id="b-dog-s"></div></div>
+          <div class="fig"><div class="label">Mac backup</div><div class="v" id="b-mac">-</div><div class="s" id="b-mac-s"></div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="label">The last 72 runs</span><span class="label" id="b-clean"></span></div>
+        <div class="rail" id="rail"></div>
+        <div class="rail-k"><span class="label">Older</span><span class="label">Now</span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="label">Run log</span><a class="label" href="https://github.com/hello-michael/aac-order-bridge/actions" target="_blank" rel="noopener">Full logs on GitHub</a></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Result</th><th>New orders</th><th>Sent to Artelo</th><th>Tracking</th><th>Delivered</th><th>Where</th></tr></thead><tbody id="runs"></tbody></table></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="label">How it works</span></div>
+        <div class="how">
+          <div><span class="label">01 · Every hour</span><p>The bridge reads every open order in Shopify. Paid orders wait out a 6-hour hold, so buyers can change their minds, then go to Artelo to be printed and framed.</p></div>
+          <div><span class="label">02 · Holds</span><p>Big orders, territory addresses, buyer emails and anything unusual stop for you. Release them here once you have checked. A new change holds the order again.</p></div>
+          <div><span class="label">03 · Safety nets</span><p>A failed run pings your phone. If the bridge goes quiet for 2.5 hours, Supabase pings you too. Your Mac keeps an hourly copy of every order.</p></div>
+        </div>
+      </div>
     </section>
 
-    <section class="section" aria-labelledby="ord-h">
-      <div class="section-h"><span class="label" id="ord-h">Orders</span><span class="label" id="ord-n"></span></div>
-      <ul class="orders" id="orders"></ul>
-    </section>
-
-    <footer><span class="label" id="foot"></span><span class="label">Archival Art Co</span></footer>
+    <footer class="sec" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center"><span class="label" id="foot"></span><span style="display:flex;gap:16px;align-items:center"><button class="btn line foot-out" id="out2" type="button" style="display:none">Sign out</button><span class="label">Archival Art Co</span></span></footer>
   </main>
 </div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-no" aria-hidden="true">
+  <div class="d-top"><span class="no" id="d-no"></span><span id="d-chip"></span><button class="ghost x" id="d-close" type="button">Close</button></div>
+  <div class="d-body" id="d-body"></div>
+</aside>
+<div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = "https://fvqtejjmfavyjmhbomvs.supabase.co";
-const SUPABASE_KEY = "sb_publishable_X1kaRXmrWLaHA93gdJUaAg_2ApIhvSq";  // public by design; data is gated by admin_dashboard()
+const SUPABASE_KEY = "sb_publishable_X1kaRXmrWLaHA93gdJUaAg_2ApIhvSq";  // public by design; every call is gated by is_admin()
+const SHOP = "https://admin.shopify.com/store/bzycf5-jj/orders/";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const NEED = {hold_review: "Held for review", error: "Failed, retrying", artelo_error: "Artelo error", submitting: "Artelo receipt unknown"};
-const LABEL = {pending: "In the change window", awaiting_payment: "Waiting for payment", submitted: "At Artelo",
-  partially_fulfilled: "Partly shipped", fulfilled: "Shipped", test_closed: "Test, closed", no_print_items: "Gift card only",
-  cancelled: "Cancelled", ...NEED};
-const SH = {ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)", idle: "var(--rest)"};
-let timer = null;
-
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const money = n => "$" + Math.round(Number(n || 0)).toLocaleString("en-US");
+const money2 = n => "$" + Number(n || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const when = t => t ? new Date(t).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) : "";
+const day = t => t ? new Date(t).toLocaleDateString("en-US", {month: "short", day: "numeric"}) : "";
 function ago(t) {
   const s = Math.round((Date.now() - new Date(t)) / 1000);
   if (s < 90) return "just now";
@@ -207,85 +358,291 @@ function ago(t) {
   if (s < 172800) return Math.round(s / 3600) + " h ago";
   return Math.round(s / 86400) + " days ago";
 }
-const when = t => new Date(t).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-const needsYou = o => NEED[o.status] && !(o.status === "hold_review" && /^cancelled in Shopify/.test(o.error_message || ""));
+const NEED = {hold_review: "Held for review", error: "Failed, retrying", artelo_error: "Artelo error", submitting: "Artelo receipt unknown"};
+const SH = {ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)", idle: "var(--rest)"};
+const GROUPS = [["all", "All"], ["needs", "Needs you"], ["waiting", "Waiting"], ["artelo", "At Artelo"],
+  ["shipped", "On the way"], ["delivered", "Delivered"], ["closed", "Closed"]];
+let D = null, timer = null, filter = "all", openNo = null, lastFocus = null;
 
-function setHealth(h, pill, head, sub) {
-  document.documentElement.style.setProperty("--sh", SH[h]);
-  $("pill").textContent = pill; $("head").textContent = head; $("sub").textContent = sub;
-  document.title = (h === "warn" ? "(1) " : h === "bad" ? "(!) " : "") + "AAC Admin";
+function isTest(o) { return o.status === "test_closed" || o.shopify_test === true || !/^\d+$/.test(String(o.number || "")); }
+function group(o) {
+  if (o.status === "hold_review" && /^cancelled in Shopify/.test(o.error_message || "")) return "closed";
+  if (NEED[o.status]) return "needs";
+  if (o.status === "pending" || o.status === "awaiting_payment") return "waiting";
+  if (o.status === "submitted") return "artelo";
+  if (o.delivered_at) return "delivered";
+  if (o.status === "fulfilled" || o.status === "partially_fulfilled") return "shipped";
+  return "closed";
 }
+function label(o) {
+  const g = group(o);
+  if (g === "needs") return /^held from the dashboard/.test(o.error_message || "") ? "Held by you" : NEED[o.status];
+  if (o.status === "awaiting_payment") return "Waiting for payment";
+  if (o.status === "pending") return "In the 6-hour hold";
+  if (g === "artelo") return "Printing at Artelo";
+  if (g === "delivered") return "Delivered";
+  if (o.status === "partially_fulfilled") return "Partly shipped";
+  if (g === "shipped") return o.delivery_status && !/^no carrier/.test(o.delivery_status) ? o.delivery_status.replace(/_/g, " ").replace(/,/g, ", ") : "On the way";
+  if (o.status === "test_closed") return "Test, closed";
+  if (o.status === "no_print_items") return "Gift card only";
+  if (o.status === "hold_review") return "Cancelled";
+  return o.status;
+}
+const chip = o => `<span class="chip ${group(o)}"><i></i>${esc(label(o))}</span>`;
+const prints = o => (o.items || []).filter(i => !i.gift_card);
+const firstImg = o => (prints(o).find(i => i.image) || {}).image;
+const releasable = o => o.status === "hold_review" && (/^held from the dashboard/.test(o.error_message || "") ||
+  /^(unusually large order: |ships to '|the buyer emailed about this order|inbox check failing)/.test(o.error_message || ""));
+const holdable = o => ["pending", "error", "artelo_error", "awaiting_payment"].includes(o.status);
+const thumb = (o, cls) => { const u = firstImg(o); return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy">` : `<div class="${cls}"></div>`; };
+const who = o => (o.ship && o.ship.name) || o.email || "";
+const where = o => o.ship && o.ship.city ? o.ship.city + ", " + (o.ship.province || o.ship.country || "") : "";
+const what = o => { const p = prints(o); if (!p.length) return (o.items || []).length ? "Gift card" : ""; const n = p.reduce((a, i) => a + (i.qty || 1), 0);
+  return p[0].title + (p.length > 1 ? " + " + (p.length - 1) + " more" : "") + (n > 1 ? " · " + n + " prints" : ""); };
+const real = d => (d.orders || []).filter(o => !isTest(o));
 
-function render(d) {
-  const runs = d.runs || [], orders = d.orders || [], live = d.live === "true";
-  const last = runs[0], need = orders.filter(needsYou), problems = [];
+function health(d) {
+  const runs = d.runs || [], last = runs[0], live = d.live === "true", problems = [];
   const lastAt = last && (last.finished_at || last.started_at);
-  const quiet = lastAt ? (Date.now() - new Date(lastAt)) / 60000 : Infinity;
   if (live) {
     if (!last) problems.push("The cloud bridge has never run.");
-    else if (quiet > 150) problems.push("No run for " + ago(lastAt).replace(" ago", "") + ". GitHub may have paused the schedule: open Run log and press Run workflow.");
-    if (last && last.ok === false) problems.push("The last run finished with " + last.errors + " error" + (last.errors === 1 ? "" : "s") + ". Open Run log for the details.");
+    else if ((Date.now() - new Date(lastAt)) / 60000 > 150) problems.push("No run for " + ago(lastAt).replace(" ago", "") + ". GitHub may have paused the schedule: open the run log and press Run workflow.");
+    if (last && last.ok === false) problems.push("The last run finished with " + last.errors + " error" + (last.errors === 1 ? "" : "s") + ". The run log has the details.");
   }
-  const checked = "Checked " + ago(d.now) + ".";
-  if (!live) setHealth("idle", "Not live yet", "The Mac is still on duty", "The cloud bridge takes over at cutover. What you see here is the cloud copy of every order.");
-  else if (problems.length) setHealth("bad", "Stopped", "The bridge has stopped", "Orders are safe in Shopify and go out as soon as it runs again. " + checked);
-  else if (need.length) setHealth("warn", "Needs you", need.length === 1 ? "One order needs you" : need.length + " orders need you", "Everything else is moving. " + checked);
-  else setHealth("ok", "Working", "Orders are flowing", "Every paid order goes to Artelo after the change window. " + checked);
+  const need = real(d).filter(o => group(o) === "needs");
+  let h;
+  if (!live) h = ["idle", "Not live", "The Mac is still on duty", "The cloud bridge takes over at cutover."];
+  else if (problems.length) h = ["bad", "Stopped", "The bridge has stopped", "Orders are safe in Shopify and go out as soon as it runs again."];
+  else if (need.length) h = ["warn", "Needs you", need.length === 1 ? "One order needs you" : need.length + " orders need you", "Everything else is moving."];
+  else h = ["ok", "Working", "Orders are flowing", "Every paid order goes to Artelo after the 6-hour hold."];
+  return {h, problems, need, last, lastAt};
+}
+
+function render() {
+  if (!D) return;
+  const {h, problems, need, last, lastAt} = health(D);
+  document.documentElement.style.setProperty("--sh", SH[h[0]]);
+  $("pill").textContent = h[1]; $("head").textContent = h[2];
+  $("sub").textContent = h[3] + (lastAt ? " Last run " + ago(lastAt) + "." : "");
   $("problems").innerHTML = problems.map(esc).join("<br>");
+  document.title = (need.length ? "(" + need.length + ") " : problems.length ? "(!) " : "") + "AAC Admin";
+  $("tab-need").textContent = need.length; $("tab-need").classList.toggle("hide", !need.length);
 
-  $("k-last").textContent = lastAt ? ago(lastAt) : "Never";
-  $("k-last-s").textContent = lastAt ? when(lastAt) + (last.host ? " · " + last.host : "") : "";
+  $("needs-sec").classList.toggle("hide", !need.length);
+  $("needs").innerHTML = need.map(o => `<div class="need">${thumb(o, "ph")}
+    <div><div class="mono" style="font-size:13px">#${esc(o.number)} · ${esc(who(o))}</div><div class="why">${esc(o.error_message || label(o))}</div></div>
+    <div class="btns">${releasable(o) ? `<button class="btn" data-release="${esc(o.order_id)}">Release</button>` : ""}<button class="btn line" data-open="${esc(o.number)}">Open</button></div></div>`).join("");
+
+  const orders = real(D), now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
+  const counted = orders.filter(o => group(o) !== "closed");
+  const month = counted.filter(o => new Date(o.created_at) >= m0);
+  const sales = month.reduce((a, o) => a + Number(o.total || 0), 0);
+  const nPrints = month.reduce((a, o) => a + prints(o).reduce((b, i) => b + (i.qty || 1), 0), 0);
+  $("month-label").textContent = now.toLocaleDateString("en-US", {month: "long", year: "numeric"});
+  $("f-sales").textContent = money(sales);
+  $("f-sales-s").textContent = month.length ? "Average order " + money(sales / month.length) : "No sales yet this month.";
+  $("f-orders").textContent = month.length;
+  $("f-orders-s").textContent = counted.length + " all time";
+  $("f-prints").textContent = nPrints;
+  $("f-prints-s").textContent = month.length ? (nPrints / month.length).toFixed(1) + " per order" : "Printed and framed to order.";
+  const doors = counted.filter(o => o.delivered_at && o.created_at).map(o => (new Date(o.delivered_at) - new Date(o.created_at)) / 864e5);
+  $("f-door").textContent = doors.length ? (doors.reduce((a, b) => a + b, 0) / doors.length).toFixed(1) + " d" : "-";
+  $("f-door-s").textContent = doors.length ? "Average across " + doors.length + " delivered" : "Shows once orders arrive.";
+
+  const cnt = g => orders.filter(o => group(o) === g).length;
+  const deliv30 = orders.filter(o => o.delivered_at && Date.now() - new Date(o.delivered_at) < 30 * 864e5).length;
+  const stages = [["waiting", "Waiting", "In the hold or waiting for payment", cnt("waiting")],
+    ["artelo", "At Artelo", "Being printed and framed", cnt("artelo")],
+    ["shipped", "On the way", "Shipped, with tracking", cnt("shipped")],
+    ["delivered", "Delivered", "In the last 30 days", deliv30]];
+  $("pipe").innerHTML = stages.map(s => `<button class="stage ${s[3] ? "has" : ""}" data-filter="${s[0]}"><span class="label">${s[1]}</span><div class="v">${s[3]}</div><div class="s">${s[2]}</div></button>`).join("");
+
+  const recent = orders.slice(0, 6);
+  $("recent").innerHTML = recent.length ? recent.map(o => `<button class="card" data-open="${esc(o.number)}">
+    <div class="img">${firstImg(o) ? `<img src="${esc(firstImg(o))}" alt="" loading="lazy">` : ""}</div>
+    <div class="wl"><div class="label">#${esc(o.number)} · ${esc(day(o.created_at))}</div><div class="t">${esc(what(o) || "Order")}</div><div class="m">${chip(o)}</div></div></button>`).join("")
+    : '<p class="empty">No orders yet. The first one will hang here.</p>';
+
+  const runs = D.runs || [];
+  rail($("rail-mini"), runs.filter(r => Date.now() - new Date(r.started_at) < 48 * 3600e3));
+  rail($("rail"), runs);
+  $("b-clean").textContent = runs.length ? runs.filter(r => r.ok !== false).length + " clean of " + runs.length : "";
+  $("rail-mini-n").textContent = lastAt ? "Last run " + ago(lastAt) : "Now";
+
+  $("b-lede").textContent = D.live !== "true" ? "Not live yet." : problems.length ? problems[0] : "Running in the cloud, every hour. Nothing here needs you.";
+  $("b-last").textContent = lastAt ? ago(lastAt) : "Never";
+  $("b-last-s").textContent = lastAt ? when(lastAt) + " · " + (last.ok === false ? last.errors + " error(s)" : "clean") : "";
   const next = lastAt ? (new Date(lastAt).getTime() + 3600e3 - Date.now()) / 60000 : null;
-  $("k-next").textContent = next == null ? "-" : next > 1.5 ? "In " + Math.round(next) + " min" : "Any minute";
-  $("k-need").textContent = need.length;
-  $("k-need").className = "v" + (need.length ? " warn" : "");
-  $("k-need-s").textContent = need.length ? need.map(o => "#" + o.shopify_order_number).join(", ") : "Nothing waiting.";
-  $("k-art").textContent = orders.filter(o => o.status === "submitted" || o.status === "partially_fulfilled").length;
-  $("k-ship").textContent = orders.filter(o => o.status === "fulfilled").length;
+  $("b-next").textContent = next == null ? "-" : next > 1.5 ? "In " + Math.round(next) + " min" : "Any minute";
+  const w = D.watchdog || {};
+  $("b-dog").textContent = D.live !== "true" ? "Off" : w.alerted ? "Alerting" : "Armed";
+  $("b-dog-s").textContent = (w.checked_at ? "Checked " + ago(w.checked_at) + ". " : "") + "Pings you after 2.5 quiet hours.";
+  $("b-mac").textContent = D.mac_backup_at ? ago(D.mac_backup_at) : "Never";
+  const macOld = D.mac_backup_at && Date.now() - new Date(D.mac_backup_at) > 3 * 3600e3;
+  $("b-mac-s").textContent = !D.mac_backup_at ? "The hourly copy of every order on your Mac." : macOld ? "Your Mac is off or asleep. Orders are not affected." : "Hourly copy of every order on your Mac.";
+  $("runs").innerHTML = runs.slice(0, 24).map(r => { const p = r.phases || {}, f = p.fetch || {}, q = p.queue || {}, t = p.tracking || {}, dl = p.delivery || {};
+    return `<tr><td class="mono">${esc(when(r.started_at))}</td><td>${r.ok === false ? '<span class="chip needs"><i></i>' + r.errors + ' error(s)</span>' : '<span class="chip shipped"><i></i>Clean</span>'}</td>
+      <td class="mono">${(f.processed || 0) + (f.awaiting_payment || 0)}</td><td class="mono">${q.submitted || 0}</td><td class="mono">${t.tracked || 0}</td><td class="mono">${dl.delivered || 0}</td><td class="mono">${esc(r.host || "")}</td></tr>`; }).join("")
+    || '<tr><td colspan="7" class="empty">No runs yet.</td></tr>';
 
+  renderOrders();
+  $("foot").textContent = "Live · refreshes every 30 seconds · " + Number(D.variants || 0).toLocaleString() + " SKUs known to the bridge";
+  if (openNo && $("drawer").classList.contains("on")) openOrder(openNo, true);
+}
+
+function rail(el, runs) {
   const chron = runs.slice().reverse(), bars = [];
   chron.forEach((r, i) => {
     if (i) { const gap = Math.round((new Date(r.started_at) - new Date(chron[i - 1].started_at)) / 3600e3);
       for (let g = 1; g < Math.min(gap, 6); g++) bars.push('<span class="gap" title="No run"></span>'); }
-    bars.push(`<span class="${r.ok === false ? "bad" : ""}" title="${esc(when(r.started_at) + (r.ok === false ? ", " + r.errors + " error(s)" : ", clean") + ", " + r.host)}"></span>`);
+    bars.push(`<span class="${r.ok === false ? "bad" : ""}" title="${esc(when(r.started_at) + (r.ok === false ? ", " + r.errors + " error(s)" : ", clean"))}"></span>`);
   });
-  $("runs").innerHTML = bars.join("") || '<span class="empty" style="background:none">No runs yet.</span>';
-  $("rail-n").textContent = runs.length ? runs.filter(r => r.ok !== false).length + " clean of " + runs.length : "";
-
-  $("ord-n").textContent = orders.length + (orders.length === 1 ? " order" : " orders");
-  $("orders").innerHTML = orders.length ? orders.map(o => {
-    const k = needsYou(o) ? "warn" : o.status === "fulfilled" ? "ok" : ["submitted", "partially_fulfilled"].includes(o.status) ? "go" : "idle";
-    const art = (o.items || []).map(i => `<b>${esc((i.qty > 1 ? i.qty + " × " : "") + i.title)}</b>${i.variant ? "<em>" + esc(i.variant.replace(/ \/ /g, " · ")) + "</em>" : ""}`).join("");
-    const track = o.tracking_url ? `<div class="track"><a href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${esc((o.carrier || "Tracking") + " " + (o.tracking_number || ""))}</a></div>` : "";
-    const err = needsYou(o) && o.error_message ? `<div class="err">${esc(o.error_message)}</div>` : "";
-    return `<li class="order"><div><div class="no">#${esc(o.shopify_order_number)}</div><div class="when">${o.created_at ? esc(when(o.created_at)) : ""}</div></div>
-      <div class="art">${art || '<em>No prints</em>'}</div>
-      <div class="total">${o.total != null ? "$" + Number(o.total).toFixed(2) : ""}</div>
-      <div><span class="chip ${k}"><i></i>${esc(LABEL[o.status] || o.status)}</span>${track}${err}</div></li>`;
-  }).join("") : '<li class="empty">No orders yet. The first one will hang here.</li>';
-  $("foot").textContent = "Live · refreshes every 30 seconds · " + (d.variants || 0).toLocaleString() + " SKUs known to the bridge";
+  el.innerHTML = bars.join("") || '<span class="none">No runs yet.</span>';
 }
+
+function renderOrders() {
+  const showTests = $("show-tests").checked, q = $("q").value.trim().toLowerCase().replace(/^#/, "");
+  const pool = (D.orders || []).filter(o => showTests || !isTest(o));
+  const counts = Object.fromEntries(GROUPS.map(([k]) => [k, k === "all" ? pool.length : pool.filter(o => group(o) === k).length]));
+  $("filters").innerHTML = GROUPS.map(([k, n]) => `<button type="button" data-f="${k}" aria-pressed="${filter === k}">${n}<b>${counts[k]}</b></button>`).join("");
+  const hay = o => [o.number, who(o), o.email, where(o), o.ship && o.ship.zip, o.tracking_number, ...(o.parcels || []).map(p => p.tracking_number),
+    ...(o.items || []).flatMap(i => [i.title, i.artist, i.sku])].join(" ").toLowerCase();
+  const list = pool.filter(o => (filter === "all" || group(o) === filter) && (!q || hay(o).includes(q)));
+  $("rows").innerHTML = list.length ? list.map(o => `<li class="row" data-open="${esc(o.number)}" tabindex="0">
+    ${thumb(o, "thumb")}
+    <div><div class="no">#${esc(o.number)}</div><div class="sub">${esc(day(o.created_at))}</div></div>
+    <div class="who">${esc(who(o)) || '<span class="sub">No name</span>'}<div class="sub">${esc(where(o))}</div></div>
+    <div class="what">${esc(what(o))}</div>
+    <div class="amt">${o.total != null ? money2(o.total) : ""}</div>
+    <div>${chip(o)}</div></li>`).join("")
+    : `<li class="empty">${q ? "Nothing matches that search." : pool.length ? "No orders in this group." : "No orders yet. Tick Show test orders to see the test runs."}</li>`;
+}
+
+function openOrder(no, refresh) {
+  const o = (D.orders || []).find(x => String(x.number) === String(no));
+  if (!o) { if (!refresh) toast("Order #" + no + " was not found."); return; }
+  openNo = String(no);
+  $("d-no").textContent = "Order #" + o.number;
+  $("d-chip").innerHTML = chip(o);
+  const placed = o.created_at ? new Date(o.created_at) : null;
+  const holdEnd = placed ? new Date(placed.getTime() + 6 * 3600e3) : null;
+  const g = group(o), sent = !!o.artelo_order_id, shipped = !!o.fulfilled_at || ["shipped", "delivered"].includes(g), deliv = !!o.delivered_at;
+  const steps = [
+    {what: "Placed", sub: o.financial_status ? "Payment " + o.financial_status : "", when: when(o.created_at), done: true},
+    {what: "6-hour hold", sub: "Buyers can change or cancel for 2 hours. The bridge waits 6.", when: holdEnd ? (holdEnd < new Date() ? "Ended " : "Ends ") + when(holdEnd) : "", done: sent, now: !sent && (g === "waiting" || g === "needs")},
+    {what: "Sent to Artelo", sub: sent ? "Printed and framed to order" : "", when: "", done: sent, now: g === "artelo"},
+    {what: "Shipped", sub: (o.parcels || []).length > 1 ? o.parcels.length + " parcels" : (o.carrier || ""), when: when(o.fulfilled_at), done: shipped, now: g === "shipped"},
+    {what: "Delivered", sub: !deliv && shipped && o.delivery_status ? "Carrier: " + o.delivery_status.replace(/_/g, " ") : "", when: when(o.delivered_at), done: deliv, final: true}];
+  const parcels = (o.parcels || []).length ? o.parcels : (o.tracking_number ? [{tracking_number: o.tracking_number, carrier: o.carrier, tracking_url: o.tracking_url}] : []);
+  const s = o.ship || {};
+  const addr = [s.name, s.address1, s.address2, [s.city, s.province].filter(Boolean).join(", ") + (s.zip ? " " + s.zip : ""), s.country && s.country !== "US" ? s.country : ""].filter(x => x && x.trim());
+  const pieces = (o.items || []).map(i => `<div class="d-piece"><div class="img">${i.image ? `<img src="${esc(i.image)}" alt="">` : ""}</div>
+    <div><div class="label">${esc(i.gift_card ? "Gift card" : (i.artist || "Anonymous"))}</div><div class="t">${esc(i.title)}</div>
+    <div class="sub">${esc((i.variant || "").replace(/ \/ /g, " · "))}</div>
+    <div class="mono" style="font-size:13px;margin-top:6px">${i.qty > 1 ? i.qty + " × " : ""}${i.price ? money2(i.price) : ""}</div></div></div>`).join("");
+  const alertBox = o.status === "hold_review" || g === "needs" ? `<div class="callout ${o.status === "error" || o.status === "artelo_error" ? "err" : ""}">${esc(o.error_message || label(o))}</div>` : "";
+  const actions = [
+    releasable(o) ? `<button class="btn" data-release="${esc(o.order_id)}">Release to Artelo</button>` : "",
+    holdable(o) ? `<button class="btn line" data-hold="${esc(o.order_id)}">Hold this order</button>` : "",
+    o.shopify_order_id ? `<a class="btn line" href="${SHOP + esc(o.shopify_order_id)}" target="_blank" rel="noopener">Open in Shopify</a>` : "",
+    addr.length ? `<button class="btn line" data-copy="${esc(addr.join("\n"))}">Copy address</button>` : ""].join("");
+  const hint = sent && !shipped ? "It is at Artelo now, so a cancellation or address change has to go through Artelo. Refunds happen in Shopify."
+    : holdable(o) ? "To cancel or change the address, do it in Shopify before the hold ends; the next bridge run picks it up. Hold pauses the order while you sort it out." : "";
+  $("d-body").innerHTML = `${alertBox}<div class="d-art">${pieces || '<p class="empty">No line items.</p>'}</div>
+    <div class="d-actions">${actions}</div>${hint ? `<p class="hint">${esc(hint)}</p>` : ""}
+    <div class="d-sec"><span class="label">Progress</span><ol class="tl">${steps.map(st => `<li class="${st.done ? "done" : ""} ${!st.done && st.now ? "now" : ""} ${st.final ? "final" : ""}"><span class="dot"></span><div><div class="what">${esc(st.what)}</div>${st.sub ? `<div class="sub">${esc(st.sub)}</div>` : ""}</div><span class="when">${esc(st.when || "")}</span></li>`).join("")}</ol></div>
+    ${parcels.length ? `<div class="d-sec"><span class="label">Tracking</span>${parcels.map(p => `<div style="margin-bottom:8px">${p.tracking_url ? `<a href="${esc(p.tracking_url)}" target="_blank" rel="noopener">${esc((p.carrier || "Track") + " " + p.tracking_number)}</a>` : esc((p.carrier || "") + " " + p.tracking_number)}</div>`).join("")}</div>` : ""}
+    <div class="d-sec"><span class="label">Ship to</span><div class="addr">${addr.map(esc).join("<br>") || '<span class="sub">No shipping address</span>'}${s.phone ? "<br>" + esc(s.phone) : ""}</div></div>
+    <div class="d-sec"><span class="label">Order</span><dl class="kv">
+      <dt>Buyer</dt><dd>${o.email ? `<a href="mailto:${esc(o.email)}">${esc(o.email)}</a>` : "-"}</dd>
+      <dt>Total</dt><dd class="mono">${money2(o.total)}${o.currency && o.currency !== "USD" ? " " + esc(o.currency) : ""}</dd>
+      ${(o.discounts || []).length ? `<dt>Discount</dt><dd>${o.discounts.map(x => esc(x.code + " (" + money2(x.amount) + ")")).join(", ")}</dd>` : ""}
+      <dt>Payment</dt><dd>${esc(o.financial_status || o.payment_status || "-")}</dd>
+      ${o.note ? `<dt>Note</dt><dd>${esc(o.note)}</dd>` : ""}
+      ${o.artelo_order_id ? `<dt>Artelo</dt><dd class="mono" style="font-size:13px;word-break:break-all">${esc(o.artelo_order_id)}</dd>` : ""}
+      <dt>Updated</dt><dd>${esc(when(o.updated_at))}</dd></dl></div>`;
+  if (!refresh) {
+    lastFocus = document.activeElement;
+    $("drawer").classList.add("on"); $("scrim").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false");
+    $("d-close").focus();
+  }
+}
+function closeOrder() {
+  openNo = null; $("drawer").classList.remove("on"); $("scrim").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true");
+  if (location.hash.startsWith("#/orders/")) history.replaceState(null, "", "#/orders");
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+
+async function act(fn, args, confirmText) {
+  if (confirmText && !confirm(confirmText)) return;
+  const {data, error} = await sb.rpc(fn, args);
+  toast(error ? error.message : data);
+  await load();
+}
+let tt; function toast(t) { $("toast").textContent = t; $("toast").classList.add("on"); clearTimeout(tt); tt = setTimeout(() => $("toast").classList.remove("on"), 4600); }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-open],[data-release],[data-hold],[data-copy],[data-filter],[data-f]");
+  if (!t) return;
+  if (t.dataset.open) location.hash = "#/orders/" + t.dataset.open;
+  else if (t.dataset.release) act("admin_release", {p_order_id: t.dataset.release}, "Release this order? The next bridge run re-checks payment and sends it to Artelo.");
+  else if (t.dataset.hold) { const note = prompt("Hold this order? It will not go to Artelo until you release it.\n\nOptional note for yourself:", ""); if (note !== null) act("admin_hold", {p_order_id: t.dataset.hold, p_note: note}); }
+  else if (t.dataset.copy) navigator.clipboard.writeText(t.dataset.copy).then(() => toast("Address copied."));
+  else if (t.dataset.filter) location.hash = "#/orders?f=" + t.dataset.filter;
+  else if (t.dataset.f) { filter = t.dataset.f; renderOrders(); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && openNo) { closeOrder(); return; }
+  if (e.key === "Tab" && openNo) {  // keep focus inside the open order
+    const f = [...$("drawer").querySelectorAll("a[href],button")].filter(x => x.offsetParent !== null);
+    if (f.length && e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (f.length && !e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  }
+  if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); goSearch(); }
+  if (e.key === "Enter" && e.target.classList && e.target.classList.contains("row")) e.target.click();
+});
+function goSearch() { if (!location.hash.startsWith("#/orders")) location.hash = "#/orders"; setTimeout(() => $("q").focus(), 40); }
+$("searchbtn").addEventListener("click", goSearch);
+$("q").addEventListener("input", renderOrders);
+$("show-tests").addEventListener("change", renderOrders);
+$("scrim").addEventListener("click", closeOrder);
+$("d-close").addEventListener("click", closeOrder);
+
+function route() {
+  const [path, qs] = (location.hash || "#/").slice(1).split("?");
+  const parts = path.split("/").filter(Boolean);
+  const tab = parts[0] === "orders" ? "orders" : parts[0] === "bridge" ? "bridge" : "overview";
+  const changed = !$("v-" + tab).classList.contains("on");
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + tab));
+  document.querySelectorAll(".tabs a").forEach(a => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const f = new URLSearchParams(qs || "").get("f");
+  if (f && GROUPS.some(g => g[0] === f)) { filter = f; if (D) renderOrders(); }
+  if (tab === "orders" && parts[1]) { if (D) openOrder(parts[1]); else openNo = parts[1]; }
+  else if ($("drawer").classList.contains("on")) closeOrder();
+  if (changed) window.scrollTo({top: 0});
+}
+window.addEventListener("hashchange", route);
 
 async function load() {
   const {data, error} = await sb.rpc("admin_dashboard");
   if (error) {
     if (/not authorized/i.test(error.message)) { await sb.auth.signOut(); return showLogin("This account is not on the admin list."); }
-    setHealth("bad", "Offline", "Can't reach the database", error.message);
+    document.documentElement.style.setProperty("--sh", SH.bad);
+    $("head").textContent = "Can't reach the database"; $("sub").textContent = error.message;
     return;
   }
-  render(data);
+  const first = !D; D = data; render();
+  if (first && openNo) openOrder(openNo);
 }
 function showLogin(msg) { clearInterval(timer); $("app").classList.add("hide"); $("login").classList.remove("hide"); $("lerr").textContent = msg || ""; }
-function showApp() { $("login").classList.add("hide"); $("app").classList.remove("hide"); load(); clearInterval(timer); timer = setInterval(load, 30000); }
-
+function showApp() { $("login").classList.add("hide"); $("app").classList.remove("hide"); route(); load(); clearInterval(timer); timer = setInterval(load, 30000); }
 $("lform").addEventListener("submit", async e => {
   e.preventDefault(); $("lerr").textContent = "";
   const {error} = await sb.auth.signInWithPassword({email: $("em").value.trim(), password: $("pw").value});
   if (error) $("lerr").textContent = error.message; else { $("pw").value = ""; showApp(); }
 });
-$("out").addEventListener("click", async () => { await sb.auth.signOut(); showLogin(); });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hide")) load(); });
+["out", "out2"].forEach(id => $(id).addEventListener("click", async () => { await sb.auth.signOut(); D = null; showLogin(); }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(); });
 sb.auth.getSession().then(({data}) => data.session ? showApp() : showLogin());
 </script>
 </body>
