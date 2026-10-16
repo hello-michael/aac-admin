@@ -2,136 +2,189 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
 <title>AAC Admin</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0b0c'/%3E%3Cpath d='M32 14.5 14.5 32v17.5H32L49.5 32z' fill='%2338bd66' opacity='.45'/%3E%3Crect x='32' y='14.5' width='17.5' height='17.5' fill='%2338bd66'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M100 30v70h70l-70 70H30v-70z' fill='%234A4540'/%3E%3Cpath d='M100 30h70v70h-70z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- admin.archival.art (2026-10-16). Source of truth: scripts/bridge_cloud/dashboard/index.html in archival-art-co.
+     Brand: docs/archival-art-co-brand-bible.md + docs/design-system/tokens.json. Black header, gallery white ground,
+     Mixta Sharp for the one headline, Geist Mono wall labels, Helvetica for reading. The square is never colored;
+     the bridge's health lives in the mark's shadow, borrowed from three paintings (Cyclamen, Thayer, The Red Chair).
      Signs in with Supabase Auth; the only data call is rpc admin_dashboard(), which answers only for admin_emails. -->
 <style>
-:root{--bg:#0e0e0f;--panel:#161618;--panel2:#1c1c1f;--line:rgba(255,255,255,.08);--ink:#f0efec;--muted:#9a9894;--faint:#6d6b67;
---ok:#38bd66;--warn:#f5ab29;--bad:#e63d36;--idle:#8a8884;--r:14px}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+@font-face{font-family:"Mixta Sharp";src:url("https://cdn.shopify.com/s/files/1/0655/8236/6797/files/MixtaSharp-Heavy.woff2") format("woff2");font-weight:800;font-display:swap}
+:root{
+  --ink:#000;--paper:#FCFBF8;--linen:#F4F1EB;--graphite:#4D4D4D;--pencil:#737373;--hairline:#E5E5E5;--on-ink-muted:#B8B5AF;--error:#B3261E;
+  /* borrowed: Moser's Cyclamen, Thayer's Red Flamingoes, Erichsen's The Red Chair; charcoal at rest */
+  --ok:#67C1B3;--warn:#E77829;--bad:#D64C29;--rest:#4A4540;
+  --sh:var(--rest);
+  --display:"Mixta Sharp",Georgia,"Times New Roman",serif;
+  --mono:"Geist Mono",Menlo,Consolas,monospace;
+  --body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
 a{color:inherit}
-.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
-header{display:flex;align-items:center;gap:18px;margin-bottom:26px}
-.mark{width:58px;height:58px;flex:none;color:var(--idle)}
-.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1px solid currentColor;background:color-mix(in srgb,currentColor 12%,transparent)}
-h1{font-size:24px;line-height:1.2;margin:6px 0 3px;font-weight:650;letter-spacing:-.01em}
-.sub{color:var(--muted);font-size:13px}
-.hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center}
-button,.btn{font:inherit;font-size:13px;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 13px;cursor:pointer;text-decoration:none}
-button:hover,.btn:hover{border-color:rgba(255,255,255,.2)}
-button.primary{background:#ecebe7;color:#111;border-color:#ecebe7;font-weight:600}
-.problems{border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad) 9%,transparent);color:#ffb3ae;border-radius:var(--r);padding:12px 16px;margin-bottom:18px;font-size:14px}
+.label{font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pencil)}
+
+/* the black bar */
+.bar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:5}
+.bar-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.lockup{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
+.mark{display:block;flex:none}
+.mark .sh{fill:var(--sh);transition:fill 1.6s ease}
+.mark .sq{fill:#fff}
+.bar .mark{width:30px;height:30px}
+.wordmark{height:22px;width:auto;aspect-ratio:800/162;display:block}
+.bar .tag{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-ink-muted);border-left:1px solid #333;padding-left:12px;margin-left:2px}
+.bar nav{margin-left:auto;display:flex;gap:4px}
+.bar nav a,.bar nav button{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:none;border:1px solid transparent;padding:10px 12px;cursor:pointer;text-decoration:none}
+.bar nav a:hover,.bar nav button:hover{border-color:#444}
+
+main{max-width:1180px;margin:0 auto;padding:56px 24px 80px}
+
+/* hero: the status, said once in the display face */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center;padding-bottom:48px;border-bottom:1px solid var(--hairline)}
+.hero .mark{width:132px;height:132px}
+.state{display:inline-flex;align-items:center;gap:8px}
+.state i{width:9px;height:9px;background:var(--sh);transition:background 1.6s ease}
+h1{font:800 clamp(38px,6vw,68px)/1.02 var(--display);letter-spacing:-.01em;margin:14px 0 14px}
+.lede{color:var(--graphite);font-size:17px;max-width:62ch;margin:0}
+.problems{margin:22px 0 0;padding:14px 16px;background:var(--linen);border-left:3px solid var(--error);color:var(--ink);font-size:15px}
 .problems:empty{display:none}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-.kpi .k{color:var(--muted);font-size:12px}.kpi .v{font-size:22px;font-weight:650;margin-top:4px;letter-spacing:-.01em}
-.kpi .s{color:var(--faint);font-size:12px;margin-top:2px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:18px}
-.card h2{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 12px;letter-spacing:.02em}
-.runs{display:flex;gap:4px;flex-wrap:wrap}
-.run{width:14px;height:22px;border-radius:4px;background:var(--ok);opacity:.9}
-.run.bad{background:var(--bad)}.run.gap{background:transparent;border:1px dashed var(--faint)}
-.legend{color:var(--faint);font-size:12px;margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{text-align:left;color:var(--faint);font-weight:500;font-size:12px;padding:0 10px 8px 0;border-bottom:1px solid var(--line)}
-td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:0}
-.num{font-weight:600;white-space:nowrap}.right{text-align:right}
-.items{color:var(--muted);font-size:13px}
-.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;white-space:nowrap;background:rgba(255,255,255,.07);color:var(--ink)}
-.chip.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:#8fe0ab}
-.chip.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:#ffd28a}
-.chip.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:#ffb3ae}
-.chip.idle{color:var(--muted)}
-.err{color:#ffb3ae;font-size:12.5px;margin-top:3px}
-.empty{color:var(--faint);padding:10px 0}
-.foot{color:var(--faint);font-size:12px;margin-top:6px}
-#login{max-width:360px;margin:12vh auto 0;padding:0 20px}
-#login .card{padding:26px}
-#login h1{margin:14px 0 4px}
-label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
-input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-input:focus{outline:2px solid rgba(255,255,255,.25);outline-offset:1px}
-#login button{width:100%;margin-top:18px;padding:11px}
-#lerr{color:#ffb3ae;font-size:13px;margin-top:12px;min-height:1em}
+
+/* wall-label figures */
+.figs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--hairline)}
+.fig{padding:28px 20px 30px 0}
+.fig+.fig{padding-left:20px;border-left:1px solid var(--hairline)}
+.fig .v{font:800 34px/1.1 var(--display);letter-spacing:-.01em;margin:10px 0 6px}
+.fig .s{font-size:13px;color:var(--pencil);line-height:1.45}
+.fig .v.warn{color:var(--warn)}
+
+/* the hanging rail of runs */
+.section{padding:44px 0 0}
+.section-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:18px}
+.rail{display:flex;align-items:flex-end;gap:3px;height:54px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.rail span{flex:1;min-width:3px;max-width:16px;background:var(--ink);height:100%;opacity:.88;transition:opacity .2s}
+.rail span:hover{opacity:.5}
+.rail span.bad{background:var(--bad);opacity:1}
+.rail span.gap{background:none;border:1px dashed var(--hairline);height:60%}
+.rail-k{display:flex;justify-content:space-between;margin-top:8px}
+
+/* orders as wall labels */
+.orders{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.order{display:grid;grid-template-columns:110px 1fr 120px 210px;gap:24px;padding:20px 0;border-bottom:1px solid var(--hairline);align-items:start}
+.order .no{font:500 13px/1.5 var(--mono);letter-spacing:.04em}
+.order .when{font-size:13px;color:var(--pencil);margin-top:2px}
+.order .art{font-size:15px;line-height:1.5}
+.order .art b{font-weight:400}
+.order .art em{font-style:normal;color:var(--pencil);font-size:13px;display:block}
+.order .total{font:500 13px/1.5 var(--mono);text-align:right}
+.chip{display:inline-flex;align-items:center;gap:8px;font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.chip i{width:8px;height:8px;background:var(--pencil);flex:none}
+.chip.ok i{background:var(--ink)}
+.chip.go i{background:var(--ok)}
+.chip.warn i{background:var(--warn)}
+.chip.idle{color:var(--pencil)}
+.order .track{font-size:13px;margin-top:6px}
+.order .err{font-size:13px;color:var(--error);margin-top:6px}
+.empty{color:var(--pencil);padding:24px 0}
+footer{margin-top:40px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* sign in */
+#login{min-height:100svh;background:var(--ink);color:#fff;display:grid;place-items:center;padding:24px}
+.login-in{width:100%;max-width:380px}
+#login .mark{width:96px;height:96px;margin-bottom:28px}
+#login .mark .sh{animation:home 50s linear infinite}
+@keyframes home{0%,100%{fill:#7DA1CA}20%{fill:#D78E98}40%{fill:#AE98CD}60%{fill:#85B7A5}80%{fill:#E29983}}
+#login h1{color:#fff;font-size:44px;margin:0 0 6px}
+#login .lede{color:var(--on-ink-muted);font-size:15px}
+#login label{display:block;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--on-ink-muted);margin:26px 0 8px}
+#login input{width:100%;font:16px var(--body);color:#fff;background:transparent;border:0;border-bottom:1px solid #555;padding:10px 0;border-radius:0}
+#login input:focus{outline:none;border-bottom-color:#fff}
+#login button{width:100%;height:54px;margin-top:34px;background:#fff;color:#000;border:0;font:500 13px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+#login button:hover{background:var(--linen)}
+#lerr{color:#ff9d8f;font-size:14px;margin-top:16px;min-height:1.2em}
+#login .wordmark{height:18px;margin-top:48px;color:#fff;opacity:.5}
+
 .hide{display:none!important}
-@media (max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}.hide-sm{display:none}header{flex-wrap:wrap}.hdr-r{margin-left:0;width:100%}}
-@media (max-width:420px){.wrap{padding:20px 16px 48px}h1{font-size:20px}}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.bar :focus-visible,#login :focus-visible{outline-color:#fff}
+
+@media (max-width:980px){.figs{grid-template-columns:repeat(2,1fr)}.fig{padding:22px 16px 24px 0}.fig+.fig{padding-left:0;border-left:0}.fig:nth-child(even){padding-left:16px;border-left:1px solid var(--hairline)}.fig{border-bottom:1px solid var(--hairline)}.figs{border-bottom:0}.fig:last-child:nth-child(odd){grid-column:1/-1;padding-left:0;border-left:0}
+  .order{grid-template-columns:90px 1fr;gap:6px 16px}.order .total{text-align:left}.order>div:nth-child(3){grid-column:2}.order>div:nth-child(4){grid-column:2}}
+@media (max-width:640px){main{padding:36px 16px 60px}.bar-in{padding:12px 16px}.bar .tag{display:none}.bar nav a.hide-sm{display:none}
+  .hero{grid-template-columns:1fr;gap:22px;padding-bottom:36px}.hero .mark{width:84px;height:84px}.fig .v{font-size:28px}}
+@media (prefers-reduced-motion:reduce){#login .mark .sh{animation:none;fill:#7DA1CA}.mark .sh,.state i{transition:none}}
 </style>
 </head>
 <body>
 
+
 <div id="login" class="hide">
-  <div class="card">
-    <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><use href="#aac-mark"/></svg>
-    <h1>AAC Admin</h1>
-    <div class="sub">Order bridge and store status.</div>
+  <div class="login-in">
+    <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
+    <h1>Back room</h1>
+    <p class="lede">Orders, the bridge to Artelo, and everything that needs you.</p>
     <form id="lform">
       <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
       <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
-      <button class="primary" type="submit">Sign in</button>
+      <button type="submit">Sign in</button>
       <div id="lerr" role="alert"></div>
     </form>
+    <svg class="wordmark" viewBox="0 0 800 162" aria-hidden="true" focusable="false"><path fill="currentColor" d="M33 75c-16 40-29 76-30 78l-2 5 14 0 15 0 7-21 7-21 31 0 31 0 1 3c1 1 5 11 8 21l6 18 15 0 15 0-1-3c-1-2-15-37-31-79l-29-75-14 0-15 0-28 74zM88 61c5 17 10 32 11 33 0 1-5 1-23 1-19 0-24 0-24-1 0-1 6-16 12-34 6-18 12-32 12-31 0 0 6 15 12 32zM358 80l0 78 12 0 13 0 0-38c1-42 1-43 8-51 10-10 27-11 35-2 6 6 6 7 7 51l0 40 13 0 12 0 0-44c-1-49-1-50-7-58-13-19-48-20-63-2l-5 5 0-29 0-29-13 0-12 0 0 79zM485 13l0 12 13 0 12 0 0-12 0-12-12 0-13 0 0 12zM774 80l0 78 12 0 13 0 0-78 0-79-13 0-12 0 0 79zM213 42c-9 2-21 11-25 19l-2 5 0-11 0-11-12 0-12 0 0 57 0 57 12 0 13 0 0-28c0-32 1-39 5-48 6-12 16-18 30-17l7 1 0-12 0-12-3 0c-4-1-8-1-13 0zM276 42c-28 4-45 27-45 60-1 36 21 59 55 59 25 0 43-14 50-37 2-10 3-9-11-9l-12 1-2 6c-8 25-43 26-52 0-7-18-4-42 7-53 14-14 41-9 45 8l1 5 13 0 12 0 0-5c-4-23-31-40-61-35zM688 42c-20 3-33 13-38 28-2 10-3 9 12 9l12 0 1-3c2-10 10-14 25-14 15 0 22 4 22 14 1 10-3 12-28 16-27 3-33 5-40 13-7 6-8 11-8 22 0 18 9 29 29 33 12 2 33-2 42-8 5-4 6-4 8 0 3 7 12 10 24 8 9-1 9-1 9-10l0-9-5 0c-7-1-7 0-7-39 0-39 0-40-8-48-10-10-29-15-50-12zM719 128c-9 18-49 17-49-2 0-12 8-17 33-20 5-1 11-2 13-3l4-2 1 12c0 9 0 12-2 15zM485 101l0 57 13 0 12 0 0-57 0-57-13 0-12 0 0 57zM526 44c0 1 39 107 40 112 1 2 3 2 15 2l14 0 21-56c11-31 20-57 19-57 0-1-6-1-13-1l-12 0-6 19c-3 10-9 30-14 43-4 14-8 25-8 25 0 0-7-20-15-43l-14-44-14 0c-7 0-13 0-13 0z"/></svg>
   </div>
 </div>
 
-<div id="app" class="wrap hide">
-  <header>
-    <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><use id="markuse" href="#aac-mark"/></svg>
-    <div>
-      <span class="pill" id="pill">Loading</span>
-      <h1 id="head">Checking the bridge...</h1>
-      <div class="sub" id="sub"></div>
-    </div>
-    <div class="hdr-r">
-      <a class="btn" href="https://admin.shopify.com/store/bzycf5-jj/orders" target="_blank" rel="noopener">Shopify orders</a>
-      <a class="btn" href="https://github.com/hello-michael/aac-order-bridge/actions" target="_blank" rel="noopener">Run log</a>
-      <button id="out">Sign out</button>
-    </div>
-  </header>
+<div id="app" class="hide">
+  <div class="bar"><div class="bar-in">
+    <span class="lockup"><svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg><svg class="wordmark" viewBox="0 0 800 162" aria-hidden="true" focusable="false"><path fill="currentColor" d="M33 75c-16 40-29 76-30 78l-2 5 14 0 15 0 7-21 7-21 31 0 31 0 1 3c1 1 5 11 8 21l6 18 15 0 15 0-1-3c-1-2-15-37-31-79l-29-75-14 0-15 0-28 74zM88 61c5 17 10 32 11 33 0 1-5 1-23 1-19 0-24 0-24-1 0-1 6-16 12-34 6-18 12-32 12-31 0 0 6 15 12 32zM358 80l0 78 12 0 13 0 0-38c1-42 1-43 8-51 10-10 27-11 35-2 6 6 6 7 7 51l0 40 13 0 12 0 0-44c-1-49-1-50-7-58-13-19-48-20-63-2l-5 5 0-29 0-29-13 0-12 0 0 79zM485 13l0 12 13 0 12 0 0-12 0-12-12 0-13 0 0 12zM774 80l0 78 12 0 13 0 0-78 0-79-13 0-12 0 0 79zM213 42c-9 2-21 11-25 19l-2 5 0-11 0-11-12 0-12 0 0 57 0 57 12 0 13 0 0-28c0-32 1-39 5-48 6-12 16-18 30-17l7 1 0-12 0-12-3 0c-4-1-8-1-13 0zM276 42c-28 4-45 27-45 60-1 36 21 59 55 59 25 0 43-14 50-37 2-10 3-9-11-9l-12 1-2 6c-8 25-43 26-52 0-7-18-4-42 7-53 14-14 41-9 45 8l1 5 13 0 12 0 0-5c-4-23-31-40-61-35zM688 42c-20 3-33 13-38 28-2 10-3 9 12 9l12 0 1-3c2-10 10-14 25-14 15 0 22 4 22 14 1 10-3 12-28 16-27 3-33 5-40 13-7 6-8 11-8 22 0 18 9 29 29 33 12 2 33-2 42-8 5-4 6-4 8 0 3 7 12 10 24 8 9-1 9-1 9-10l0-9-5 0c-7-1-7 0-7-39 0-39 0-40-8-48-10-10-29-15-50-12zM719 128c-9 18-49 17-49-2 0-12 8-17 33-20 5-1 11-2 13-3l4-2 1 12c0 9 0 12-2 15zM485 101l0 57 13 0 12 0 0-57 0-57-13 0-12 0 0 57zM526 44c0 1 39 107 40 112 1 2 3 2 15 2l14 0 21-56c11-31 20-57 19-57 0-1-6-1-13-1l-12 0-6 19c-3 10-9 30-14 43-4 14-8 25-8 25 0 0-7-20-15-43l-14-44-14 0c-7 0-13 0-13 0z"/></svg></span>
+    <span class="tag">Admin</span>
+    <nav>
+      <a href="https://admin.shopify.com/store/bzycf5-jj/orders" target="_blank" rel="noopener">Shopify</a>
+      <a class="hide-sm" href="https://github.com/hello-michael/aac-order-bridge/actions" target="_blank" rel="noopener">Run log</a>
+      <a class="hide-sm" href="https://archival.art" target="_blank" rel="noopener">Store</a>
+      <button id="out" type="button">Sign out</button>
+    </nav>
+  </div></div>
 
-  <div class="problems" id="problems"></div>
+  <main>
+    <section class="hero">
+      <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
+      <div>
+        <span class="state label"><i></i><span id="pill">Checking</span></span>
+        <h1 id="head">Checking the bridge</h1>
+        <p class="lede" id="sub"></p>
+        <div class="problems" id="problems" role="alert"></div>
+      </div>
+    </section>
 
-  <div class="kpis">
-    <div class="kpi"><div class="k">Last run</div><div class="v" id="k-last">-</div><div class="s" id="k-last-s"></div></div>
-    <div class="kpi"><div class="k">Next run</div><div class="v" id="k-next">-</div><div class="s">hourly, catches up after any gap</div></div>
-    <div class="kpi"><div class="k">Needs you</div><div class="v" id="k-need">-</div><div class="s" id="k-need-s"></div></div>
-    <div class="kpi"><div class="k">At Artelo</div><div class="v" id="k-art">-</div><div class="s">printing or in transit</div></div>
-    <div class="kpi"><div class="k">Shipped</div><div class="v" id="k-ship">-</div><div class="s" id="k-ship-s">all time</div></div>
-  </div>
+    <section class="figs" aria-label="Bridge figures">
+      <div class="fig"><div class="label">Last run</div><div class="v" id="k-last">-</div><div class="s" id="k-last-s"></div></div>
+      <div class="fig"><div class="label">Next run</div><div class="v" id="k-next">-</div><div class="s">Hourly. Catches up after any gap.</div></div>
+      <div class="fig"><div class="label">Needs you</div><div class="v" id="k-need">-</div><div class="s" id="k-need-s"></div></div>
+      <div class="fig"><div class="label">At Artelo</div><div class="v" id="k-art">-</div><div class="s">Printing, framing or on the way.</div></div>
+      <div class="fig"><div class="label">Shipped</div><div class="v" id="k-ship">-</div><div class="s">All time.</div></div>
+    </section>
 
-  <div class="card">
-    <h2>Last 48 runs</h2>
-    <div class="runs" id="runs"></div>
-    <div class="legend">Green ran cleanly, red finished with an error, dashed means no run that hour. Oldest on the left.</div>
-  </div>
+    <section class="section" aria-labelledby="rail-h">
+      <div class="section-h"><span class="label" id="rail-h">The last 48 runs</span><span class="label" id="rail-n"></span></div>
+      <div class="rail" id="runs"></div>
+      <div class="rail-k"><span class="label">Older</span><span class="label">Now</span></div>
+    </section>
 
-  <div class="card">
-    <h2>Orders</h2>
-    <table>
-      <thead><tr><th>Order</th><th class="hide-sm">Placed</th><th>Prints</th><th class="right hide-sm">Total</th><th>Status</th></tr></thead>
-      <tbody id="orders"></tbody>
-    </table>
-  </div>
-  <div class="foot" id="foot"></div>
+    <section class="section" aria-labelledby="ord-h">
+      <div class="section-h"><span class="label" id="ord-h">Orders</span><span class="label" id="ord-n"></span></div>
+      <ul class="orders" id="orders"></ul>
+    </section>
+
+    <footer><span class="label" id="foot"></span><span class="label">Archival Art Co</span></footer>
+  </main>
 </div>
-
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <linearGradient id="fade" x1="652" y1="372" x2="232" y2="792" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity=".62"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/>
-    </linearGradient>
-    <mask id="fademask" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><rect width="1024" height="1024" fill="url(#fade)"/></mask>
-    <symbol id="aac-mark" viewBox="0 0 1024 1024">
-      <rect x="100" y="100" width="824" height="824" rx="184" fill="#0b0b0c"/>
-      <path d="M512 232 232 512v280h280l280-280z" fill="currentColor" mask="url(#fademask)"/>
-      <rect x="512" y="232" width="280" height="280" fill="currentColor"/>
-    </symbol>
-  </defs>
-</svg>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -140,10 +193,10 @@ const SUPABASE_KEY = "sb_publishable_X1kaRXmrWLaHA93gdJUaAg_2ApIhvSq";  // publi
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 const NEED = {hold_review: "Held for review", error: "Failed, retrying", artelo_error: "Artelo error", submitting: "Artelo receipt unknown"};
-const LABEL = {pending: "Waiting (change window)", awaiting_payment: "Waiting for payment", submitted: "At Artelo",
+const LABEL = {pending: "In the change window", awaiting_payment: "Waiting for payment", submitted: "At Artelo",
   partially_fulfilled: "Partly shipped", fulfilled: "Shipped", test_closed: "Test, closed", no_print_items: "Gift card only",
   cancelled: "Cancelled", ...NEED};
-const COLORS = {ok: "#38bd66", warn: "#f5ab29", bad: "#e63d36", idle: "#8a8884"};
+const SH = {ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)", idle: "var(--rest)"};
 let timer = null;
 
 function ago(t) {
@@ -153,111 +206,85 @@ function ago(t) {
   if (s < 172800) return Math.round(s / 3600) + " h ago";
   return Math.round(s / 86400) + " days ago";
 }
-function localTime(t) {
-  return new Date(t).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
-}
-function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
-function needsYou(o) { return NEED[o.status] && !(o.status === "hold_review" && /^cancelled in Shopify/.test(o.error_message || "")); }
-function parseLocal(s) { return s ? new Date(s) : null; }  // stored as New York local ISO text
+const when = t => new Date(t).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const needsYou = o => NEED[o.status] && !(o.status === "hold_review" && /^cancelled in Shopify/.test(o.error_message || ""));
 
 function setHealth(h, pill, head, sub) {
-  const c = COLORS[h];
-  document.querySelectorAll(".mark").forEach(m => m.style.color = c);
-  const p = $("pill"); p.textContent = pill; p.style.color = c;
-  $("head").textContent = head; $("sub").textContent = sub;
-  document.title = (h === "ok" ? "" : h === "warn" ? "(!) " : "(!!) ") + "AAC Admin";
+  document.documentElement.style.setProperty("--sh", SH[h]);
+  $("pill").textContent = pill; $("head").textContent = head; $("sub").textContent = sub;
+  document.title = (h === "warn" ? "(1) " : h === "bad" ? "(!) " : "") + "AAC Admin";
 }
 
 function render(d) {
   const runs = d.runs || [], orders = d.orders || [], live = d.live === "true";
-  const last = runs[0];
-  const problems = [];
-  const need = orders.filter(needsYou);
+  const last = runs[0], need = orders.filter(needsYou), problems = [];
   const lastAt = last && (last.finished_at || last.started_at);
-  const quietMin = lastAt ? (Date.now() - new Date(lastAt)) / 60000 : Infinity;
-
+  const quiet = lastAt ? (Date.now() - new Date(lastAt)) / 60000 : Infinity;
   if (live) {
     if (!last) problems.push("The cloud bridge has never run.");
-    else if (quietMin > 150) problems.push("No bridge run for " + ago(lastAt).replace(" ago", "") + ". GitHub may have paused the schedule: open Run log.");
-    if (last && last.ok === false) problems.push("The last run finished with " + last.errors + " error(s). Open Run log for details.");
+    else if (quiet > 150) problems.push("No run for " + ago(lastAt).replace(" ago", "") + ". GitHub may have paused the schedule: open Run log and press Run workflow.");
+    if (last && last.ok === false) problems.push("The last run finished with " + last.errors + " error" + (last.errors === 1 ? "" : "s") + ". Open Run log for the details.");
   }
-
-  if (!live) setHealth("idle", "Not live yet", "The Mac is still running the bridge", "The cloud bridge starts at cutover. Data here is the cloud copy.");
-  else if (problems.length) setHealth("bad", "Not running", problems[0].replace(/ Open Run log.*| GitHub.*/, ""), "Checked " + ago(d.now));
-  else if (need.length) setHealth("warn", "Needs you", need.length + (need.length === 1 ? " order needs you" : " orders need you"), "Checked " + ago(d.now));
-  else setHealth("ok", "Working", "Bridge is working", "Checked " + ago(d.now) + (last ? " · ran on " + last.host : ""));
-
+  const checked = "Checked " + ago(d.now) + ".";
+  if (!live) setHealth("idle", "Not live yet", "The Mac is still on duty", "The cloud bridge takes over at cutover. What you see here is the cloud copy of every order.");
+  else if (problems.length) setHealth("bad", "Stopped", "The bridge has stopped", "Orders are safe in Shopify and go out as soon as it runs again. " + checked);
+  else if (need.length) setHealth("warn", "Needs you", need.length === 1 ? "One order needs you" : need.length + " orders need you", "Everything else is moving. " + checked);
+  else setHealth("ok", "Working", "Orders are flowing", "Every paid order goes to Artelo after the change window. " + checked);
   $("problems").innerHTML = problems.map(esc).join("<br>");
-  $("k-last").textContent = lastAt ? ago(lastAt) : "never";
-  $("k-last-s").textContent = lastAt ? localTime(lastAt) : "";
-  if (lastAt) {
-    const next = (new Date(lastAt).getTime() + 3600e3 - Date.now()) / 60000;
-    $("k-next").textContent = next > 1.5 ? "in " + Math.round(next) + " min" : "any minute";
-  } else $("k-next").textContent = "-";
+
+  $("k-last").textContent = lastAt ? ago(lastAt) : "Never";
+  $("k-last-s").textContent = lastAt ? when(lastAt) + (last.host ? " · " + last.host : "") : "";
+  const next = lastAt ? (new Date(lastAt).getTime() + 3600e3 - Date.now()) / 60000 : null;
+  $("k-next").textContent = next == null ? "-" : next > 1.5 ? "In " + Math.round(next) + " min" : "Any minute";
   $("k-need").textContent = need.length;
-  $("k-need").style.color = need.length ? COLORS.warn : "";
-  $("k-need-s").textContent = need.length ? need.map(o => "#" + o.shopify_order_number).join(", ") : "nothing waiting";
+  $("k-need").className = "v" + (need.length ? " warn" : "");
+  $("k-need-s").textContent = need.length ? need.map(o => "#" + o.shopify_order_number).join(", ") : "Nothing waiting.";
   $("k-art").textContent = orders.filter(o => o.status === "submitted" || o.status === "partially_fulfilled").length;
-  const shipped = orders.filter(o => o.status === "fulfilled");
-  $("k-ship").textContent = shipped.length;
+  $("k-ship").textContent = orders.filter(o => o.status === "fulfilled").length;
 
-  // runs strip: oldest left; mark missing hours
-  const strip = [];
-  const chron = runs.slice().reverse();
+  const chron = runs.slice().reverse(), bars = [];
   chron.forEach((r, i) => {
-    if (i) {
-      const gapH = (new Date(r.started_at) - new Date(chron[i - 1].started_at)) / 3600e3;
-      for (let g = 1; g < Math.min(Math.round(gapH), 6); g++) strip.push('<span class="run gap" title="no run"></span>');
-    }
-    strip.push(`<span class="run ${r.ok === false ? "bad" : ""}" title="${esc(localTime(r.started_at) + (r.ok === false ? " - " + r.errors + " error(s)" : " - ok") + " - " + r.host)}"></span>`);
+    if (i) { const gap = Math.round((new Date(r.started_at) - new Date(chron[i - 1].started_at)) / 3600e3);
+      for (let g = 1; g < Math.min(gap, 6); g++) bars.push('<span class="gap" title="No run"></span>'); }
+    bars.push(`<span class="${r.ok === false ? "bad" : ""}" title="${esc(when(r.started_at) + (r.ok === false ? ", " + r.errors + " error(s)" : ", clean") + ", " + r.host)}"></span>`);
   });
-  $("runs").innerHTML = strip.join("") || '<span class="empty">No runs yet.</span>';
+  $("runs").innerHTML = bars.join("") || '<span class="empty" style="background:none">No runs yet.</span>';
+  $("rail-n").textContent = runs.length ? runs.filter(r => r.ok !== false).length + " clean of " + runs.length : "";
 
+  $("ord-n").textContent = orders.length + (orders.length === 1 ? " order" : " orders");
   $("orders").innerHTML = orders.length ? orders.map(o => {
-    const kind = needsYou(o) ? "warn" : o.status === "fulfilled" ? "ok" : ["submitted", "partially_fulfilled"].includes(o.status) ? "" : "idle";
-    const items = (o.items || []).map(i => esc((i.qty > 1 ? i.qty + " x " : "") + i.title + (i.variant ? " (" + i.variant + ")" : ""))).join("<br>");
-    const track = o.tracking_url ? `<div class="items"><a href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${esc(o.carrier || "Tracking")} ${esc(o.tracking_number || "")}</a></div>` : "";
+    const k = needsYou(o) ? "warn" : o.status === "fulfilled" ? "ok" : ["submitted", "partially_fulfilled"].includes(o.status) ? "go" : "idle";
+    const art = (o.items || []).map(i => `<b>${esc((i.qty > 1 ? i.qty + " × " : "") + i.title)}</b>${i.variant ? "<em>" + esc(i.variant.replace(/ \/ /g, " · ")) + "</em>" : ""}`).join("");
+    const track = o.tracking_url ? `<div class="track"><a href="${esc(o.tracking_url)}" target="_blank" rel="noopener">${esc((o.carrier || "Tracking") + " " + (o.tracking_number || ""))}</a></div>` : "";
     const err = needsYou(o) && o.error_message ? `<div class="err">${esc(o.error_message)}</div>` : "";
-    const placed = parseLocal(o.created_at);
-    return `<tr><td class="num">#${esc(o.shopify_order_number)}</td>
-      <td class="hide-sm items">${placed ? esc(localTime(placed)) : ""}</td>
-      <td class="items">${items || "-"}</td>
-      <td class="right hide-sm">${o.total != null ? "$" + Number(o.total).toFixed(2) : ""}</td>
-      <td><span class="chip ${kind}">${esc(LABEL[o.status] || o.status)}</span>${track}${err}</td></tr>`;
-  }).join("") : '<tr><td colspan="5" class="empty">No orders in the cloud database yet.</td></tr>';
-
-  $("foot").textContent = "Refreshes every 30 seconds. " + (d.variants || 0).toLocaleString() + " SKUs known to the bridge.";
+    return `<li class="order"><div><div class="no">#${esc(o.shopify_order_number)}</div><div class="when">${o.created_at ? esc(when(o.created_at)) : ""}</div></div>
+      <div class="art">${art || '<em>No prints</em>'}</div>
+      <div class="total">${o.total != null ? "$" + Number(o.total).toFixed(2) : ""}</div>
+      <div><span class="chip ${k}"><i></i>${esc(LABEL[o.status] || o.status)}</span>${track}${err}</div></li>`;
+  }).join("") : '<li class="empty">No orders yet. The first one will hang here.</li>';
+  $("foot").textContent = "Live · refreshes every 30 seconds · " + (d.variants || 0).toLocaleString() + " SKUs known to the bridge";
 }
 
 async function load() {
   const {data, error} = await sb.rpc("admin_dashboard");
   if (error) {
-    if (/not authorized/i.test(error.message)) { await sb.auth.signOut(); return showLogin("This account is not an admin."); }
-    setHealth("bad", "Offline", "Cannot reach the database", error.message);
+    if (/not authorized/i.test(error.message)) { await sb.auth.signOut(); return showLogin("This account is not on the admin list."); }
+    setHealth("bad", "Offline", "Can't reach the database", error.message);
     return;
   }
   render(data);
 }
-
-function showLogin(msg) {
-  clearInterval(timer);
-  $("app").classList.add("hide"); $("login").classList.remove("hide");
-  $("lerr").textContent = msg || "";
-}
-function showApp() {
-  $("login").classList.add("hide"); $("app").classList.remove("hide");
-  load(); clearInterval(timer); timer = setInterval(load, 30000);
-}
+function showLogin(msg) { clearInterval(timer); $("app").classList.add("hide"); $("login").classList.remove("hide"); $("lerr").textContent = msg || ""; }
+function showApp() { $("login").classList.add("hide"); $("app").classList.remove("hide"); load(); clearInterval(timer); timer = setInterval(load, 30000); }
 
 $("lform").addEventListener("submit", async e => {
-  e.preventDefault();
-  $("lerr").textContent = "";
+  e.preventDefault(); $("lerr").textContent = "";
   const {error} = await sb.auth.signInWithPassword({email: $("em").value.trim(), password: $("pw").value});
   if (error) $("lerr").textContent = error.message; else { $("pw").value = ""; showApp(); }
 });
 $("out").addEventListener("click", async () => { await sb.auth.signOut(); showLogin(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hide")) load(); });
-
 sb.auth.getSession().then(({data}) => data.session ? showApp() : showLogin());
 </script>
 </body>
