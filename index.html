@@ -67,6 +67,8 @@ h2{font:800 30px/1.1 var(--display);letter-spacing:-.01em;margin:0}
 .state{display:inline-flex;align-items:center;gap:9px}.state i{width:9px;height:9px;background:var(--sh);transition:background 1.6s}
 .problems{margin-top:20px;padding:14px 18px;background:var(--linen);border-left:3px solid var(--error);font-size:15px}
 .problems:empty{display:none}
+.stale{margin:-20px 0 32px;padding:12px 16px;background:var(--ink);color:#fff;font-size:14px}
+body.offline .btn[data-release],body.offline .btn[data-hold]{opacity:.35;pointer-events:none}
 
 .needs{display:grid;gap:12px}
 .need{display:grid;grid-template-columns:64px 1fr auto;gap:18px;align-items:center;padding:16px;background:#fff;border:1px solid var(--hairline);border-left:3px solid var(--warn)}
@@ -218,7 +220,6 @@ td.mono{font-size:13px}
   <div class="login-in">
     <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
     <h1>Back room</h1>
-    <p class="lede">Orders, the bridge to Artelo, and everything that needs you.</p>
     <form id="lform">
       <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
       <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
@@ -246,6 +247,7 @@ td.mono{font-size:13px}
   </div></div>
 
   <main>
+    <div class="stale hide" id="stale" role="alert"></div>
     <section class="view" id="v-overview" aria-label="Overview">
       <div class="hero">
         <svg class="mark" viewBox="0 0 200 200" aria-hidden="true"><path class="sh" d="M100 0v100h100L100 200H0V100z"/><path class="sq" d="M100 0h100v100H100z"/></svg>
@@ -366,7 +368,9 @@ const GROUPS = [["all", "All"], ["needs", "Needs you"], ["waiting", "Waiting"], 
   ["shipped", "On the way"], ["delivered", "Delivered"], ["closed", "Closed"]];
 let D = null, timer = null, filter = "all", openNo = null, lastFocus = null;
 
-function isTest(o) { return o.status === "test_closed" || o.shopify_test === true || !/^\d+$/.test(String(o.number || "")); }
+function isTest(o) { return o.is_test != null ? o.is_test : (o.status === "test_closed" || o.shopify_test === true); }  // replacements (RPL-...) are real (Codex B1-21)
+const safeUrl = u => /^https?:\/\//i.test(String(u || "")) ? u : "";  // tracking links: web addresses only (Codex B1-20)
+let lastGood = null;
 function group(o) {
   if (o.status === "hold_review" && /^cancelled in Shopify/.test(o.error_message || "")) return "closed";
   if (NEED[o.status]) return "needs";
@@ -410,6 +414,8 @@ function health(d) {
     if (!last) problems.push("The cloud bridge has never run.");
     else if ((Date.now() - new Date(lastAt)) / 60000 > 150) problems.push("No run for " + ago(lastAt).replace(" ago", "") + ". GitHub may have paused the schedule: open the run log and press Run workflow.");
     if (last && last.ok === false) problems.push("The last run finished with " + last.errors + " error" + (last.errors === 1 ? "" : "s") + ". The run log has the details.");
+    const wd = d.watchdog || {};
+    if (!wd.checked_at || Date.now() - new Date(wd.checked_at) > 45 * 60000) problems.push("The watchdog has not checked in since " + (wd.checked_at ? ago(wd.checked_at) : "it was set up") + ", so a stopped bridge might not page you.");
   }
   const need = real(d).filter(o => group(o) === "needs");
   let h;
@@ -477,18 +483,21 @@ function render() {
   const next = lastAt ? (new Date(lastAt).getTime() + 3600e3 - Date.now()) / 60000 : null;
   $("b-next").textContent = next == null ? "-" : next > 1.5 ? "In " + Math.round(next) + " min" : "Any minute";
   const w = D.watchdog || {};
-  $("b-dog").textContent = D.live !== "true" ? "Off" : w.alerted ? "Alerting" : "Armed";
+  const dogStale = !w.checked_at || Date.now() - new Date(w.checked_at) > 45 * 60000;
+  $("b-dog").textContent = D.live !== "true" ? "Off" : w.alerted ? "Alerting" : dogStale ? "Not checking" : "Armed";
   $("b-dog-s").textContent = (w.checked_at ? "Checked " + ago(w.checked_at) + ". " : "") + "Pings you after 2.5 quiet hours.";
-  $("b-mac").textContent = D.mac_backup_at ? ago(D.mac_backup_at) : "Never";
+  const macFail = /^problem/.test(D.mac_backup_note || "");
+  $("b-mac").textContent = macFail ? "Failing" : D.mac_backup_at ? ago(D.mac_backup_at) : "Never";
   const macOld = D.mac_backup_at && Date.now() - new Date(D.mac_backup_at) > 3 * 3600e3;
-  $("b-mac-s").textContent = !D.mac_backup_at ? "The hourly copy of every order on your Mac." : macOld ? "Your Mac is off or asleep. Orders are not affected." : "Hourly copy of every order on your Mac.";
+  $("b-mac-s").textContent = macFail ? "Last good copy " + (D.mac_backup_at ? ago(D.mac_backup_at) : "never") + ". " + D.mac_backup_note.slice(0, 160)
+    : !D.mac_backup_at ? "The hourly copy of every order on your Mac." : macOld ? "Your Mac is off or asleep. Orders are not affected." : "Hourly copy of every order on your Mac.";
   $("runs").innerHTML = runs.slice(0, 24).map(r => { const p = r.phases || {}, f = p.fetch || {}, q = p.queue || {}, t = p.tracking || {}, dl = p.delivery || {};
     return `<tr><td class="mono">${esc(when(r.started_at))}</td><td>${r.ok === false ? '<span class="chip needs"><i></i>' + r.errors + ' error(s)</span>' : '<span class="chip clean"><i></i>Clean</span>'}</td>
       <td class="mono">${(f.processed || 0) + (f.awaiting_payment || 0)}</td><td class="mono">${q.submitted || 0}</td><td class="mono">${t.tracked || 0}</td><td class="mono">${dl.delivered || 0}</td><td class="mono">${esc(r.host || "")}</td></tr>`; }).join("")
     || '<tr><td colspan="7" class="empty">No runs yet.</td></tr>';
 
   renderOrders();
-  $("foot").textContent = "Live · refreshes every 30 seconds · " + Number(D.variants || 0).toLocaleString() + " SKUs known to the bridge";
+  $("foot").textContent = "Live · updated " + (lastGood ? lastGood.toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}) : "now") + " · refreshes every 30 seconds · " + Number(D.variants || 0).toLocaleString() + " SKUs known to the bridge";
   if (openNo && $("drawer").classList.contains("on")) openOrder(openNo, true);
 }
 
@@ -510,7 +519,7 @@ function renderOrders() {
   const hay = o => [o.number, who(o), o.email, where(o), o.ship && o.ship.zip, o.tracking_number, ...(o.parcels || []).map(p => p.tracking_number),
     ...(o.items || []).flatMap(i => [i.title, i.artist, i.sku])].join(" ").toLowerCase();
   const list = pool.filter(o => (filter === "all" || group(o) === filter) && (!q || hay(o).includes(q)));
-  $("rows").innerHTML = list.length ? list.map(o => `<li class="row" data-open="${esc(o.number)}" tabindex="0">
+  $("rows").innerHTML = list.length ? list.map(o => `<li class="row" data-open="${esc(o.number)}" tabindex="0" role="button" aria-label="Order ${esc(o.number)}">
     ${thumb(o, "thumb")}
     <div><div class="no">#${esc(o.number)}</div><div class="sub">${esc(day(o.created_at))}</div></div>
     <div class="who">${esc(who(o)) || '<span class="sub">No name</span>'}<div class="sub">${esc(where(o))}</div></div>
@@ -553,7 +562,7 @@ function openOrder(no, refresh) {
   $("d-body").innerHTML = `${alertBox}<div class="d-art">${pieces || '<p class="empty">No line items.</p>'}</div>
     <div class="d-actions">${actions}</div>${hint ? `<p class="hint">${esc(hint)}</p>` : ""}
     <div class="d-sec"><span class="label">Progress</span><ol class="tl">${steps.map(st => `<li class="${st.done ? "done" : ""} ${!st.done && st.now ? "now" : ""} ${st.final ? "final" : ""}"><span class="dot"></span><div><div class="what">${esc(st.what)}</div>${st.sub ? `<div class="sub">${esc(st.sub)}</div>` : ""}</div><span class="when">${esc(st.when || "")}</span></li>`).join("")}</ol></div>
-    ${parcels.length ? `<div class="d-sec"><span class="label">Tracking</span>${parcels.map(p => `<div style="margin-bottom:8px">${p.tracking_url ? `<a href="${esc(p.tracking_url)}" target="_blank" rel="noopener">${esc((p.carrier || "Track") + " " + p.tracking_number)}</a>` : esc((p.carrier || "") + " " + p.tracking_number)}</div>`).join("")}</div>` : ""}
+    ${parcels.length ? `<div class="d-sec"><span class="label">Tracking</span>${parcels.map(p => `<div style="margin-bottom:8px">${safeUrl(p.tracking_url) ? `<a href="${esc(p.tracking_url)}" target="_blank" rel="noopener noreferrer">${esc((p.carrier || "Track") + " " + p.tracking_number)}</a>` : esc((p.carrier || "") + " " + p.tracking_number)}</div>`).join("")}</div>` : ""}
     <div class="d-sec"><span class="label">Ship to</span><div class="addr">${addr.map(esc).join("<br>") || '<span class="sub">No shipping address</span>'}${s.phone ? "<br>" + esc(s.phone) : ""}</div></div>
     <div class="d-sec"><span class="label">Order</span><dl class="kv">
       <dt>Buyer</dt><dd>${o.email ? `<a href="mailto:${esc(o.email)}">${esc(o.email)}</a>` : "-"}</dd>
@@ -600,7 +609,7 @@ document.addEventListener("keydown", e => {
     if (f.length && e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (f.length && !e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
   }
-  if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); goSearch(); }
+  if (e.key === "/" && !openNo && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); goSearch(); }
   if (e.key === "Enter" && e.target.classList && e.target.classList.contains("row")) e.target.click();
 });
 function goSearch() { if (!location.hash.startsWith("#/orders")) location.hash = "#/orders"; setTimeout(() => $("q").focus(), 40); }
@@ -629,10 +638,15 @@ async function load() {
   const {data, error} = await sb.rpc("admin_dashboard");
   if (error) {
     if (/not authorized/i.test(error.message)) { await sb.auth.signOut(); return showLogin("This account is not on the admin list."); }
+    // Codex B1-13: say so on every view, keep old data visibly stale, and switch off the actions
     document.documentElement.style.setProperty("--sh", SH.bad);
-    $("head").textContent = "Can't reach the database"; $("sub").textContent = error.message;
+    document.body.classList.add("offline");
+    $("pill").textContent = "Offline"; document.title = "(offline) AAC Admin";
+    $("stale").textContent = "Can't reach the order database (" + error.message + "). " + (lastGood ? "Showing what it said " + ago(lastGood) + "; Hold and Release are off until it is back." : "Nothing loaded yet.");
+    $("stale").classList.remove("hide");
     return;
   }
+  document.body.classList.remove("offline"); $("stale").classList.add("hide"); lastGood = new Date();
   const first = !D; D = data; render();
   if (first && openNo) openOrder(openNo);
 }
